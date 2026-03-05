@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Seller Dashboard - M7 Marketplace</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="M7shooping.css">
+    <link rel="icon" type="image/x-icon" href="M7shooping.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .dashboard-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Welcome Section */
+        .welcome-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 50px;
+            border-radius: 40px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .welcome-section::before {
+            content: '📦';
+            position: absolute;
+            font-size: 150px;
+            opacity: 0.1;
+            bottom: -30px;
+            right: -30px;
+            transform: rotate(-15deg);
+        }
+        
+        .welcome-text h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            color: white;
+        }
+        
+        .welcome-text p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        
+        .logout-btn:hover {
+            background: white;
+            color: #764ba2;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #d96565 0%, #4CAF50 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .stat-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-label {
+            font-size: 16px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 42px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, #d96565 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
+        
+        /* Section Title */
+        .section-title {
+            font-size: 32px;
+            margin: 50px 0 30px;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(135deg, #d96565 0%, #4CAF50 100%);
+            border-radius: 2px;
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+        
+        .action-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            padding: 35px 25px;
+            text-align: center;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .action-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #d96565 0%, #4CAF50 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .action-card:hover {
+            transform: translateY(-15px);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        }
+        
+        .action-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .action-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .action-card:hover .action-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        .action-card h3 {
+            color: #d96565;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .action-card p {
+            opacity: 0.8;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        /* Recent Products */
+        .recent-products {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+        
+        .recent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .recent-header h3 {
+            color: #d96565;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .view-all {
+            color: #d96565;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .view-all:hover {
+            color: white;
+            text-decoration: underline;
+        }
+        
+        .product-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .product-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(10px);
+            border-color: #d96565;
+        }
+        
+        .product-thumb {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid rgba(217, 101, 101, 0.3);
+        }
+        
+        .product-info {
+            flex: 1;
+        }
+        
+        .product-info h4 {
+            font-size: 18px;
+            margin-bottom: 5px;
+            color: #d96565;
+        }
+        
+        .product-info p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .product-price {
+            font-weight: 600;
+            color: #4CAF50;
+            font-size: 16px;
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .product-btn {
+            padding: 8px 15px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .product-btn.edit {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .product-btn.edit:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .product-btn.delete {
+            background: #d96565;
+            color: white;
+        }
+        
+        .product-btn.delete:hover {
+            background: #b84343;
+            transform: translateY(-2px);
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+        }
+        
+        .empty-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .empty-state h3 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            color: #d96565;
+        }
+        
+        .empty-state p {
+            font-size: 16px;
+            opacity: 0.8;
+            margin-bottom: 25px;
+        }
+        
+        .empty-btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .empty-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(76, 175, 80, 0.4);
+        }
+        
+        /* Loading Spinner */
+        .loading-state {
+            text-align: center;
+            padding: 80px;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #d96565;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .welcome-section {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+                padding: 30px;
+            }
+            
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .product-item {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .product-actions {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">
+        <img src="M7shooping.png" alt="M7 Shopping Logo" class="logo-img">
+        <span class="logo-text">M7 Marketplace</span>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="home.html">Home</a></li>
+            <li><a href="products.html">Products</a></li>
+            <li><a href="cart.html">Cart</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="seller-dashboard.html" class="active">Dashboard</a></li>
+            <li><a href="auth.html">Account</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <div class="dashboard-wrapper">
+        <div id="dashboard-content">
+            <!-- Dashboard content loaded by JavaScript -->
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading your dashboard...</p>
+            </div>
+        </div>
+    </div>
+    <!-- Add this after your stats grid -->
+    <div style="margin-top: 40px; background: rgba(217, 101, 101, 0.1); padding: 30px; border-radius: 20px;">
+        <h3 style="color: #d96565; margin-bottom: 20px;">🏦 Payment to M7 Marketplace</h3>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+            <div>
+                <p><strong>Total Revenue:</strong> <span id="totalRevenue">0 DZD</span></p>
+                <p><strong>Commission (5%):</strong> <span id="commissionDue">0 DZD</span></p>
+                <p><strong>Net Earnings:</strong> <span id="netEarnings">0 DZD</span></p>
+                <p><strong>Status:</strong> <span style="color: #FF9800;">Pending</span></p>
+            </div>
+            <div style="text-align: right;">
+                <h4 style="color: #4CAF50;">🏦 CCP Account Details</h4>
+                <p><strong>Account:</strong> 88 0042745945</p>
+                <p><strong>Name:</strong> M7 Marketplace</p>
+                <p><strong>Reference:</strong> <span id="sellerRef">SELLER-XXX</span></p>
+                <button onclick="showPaymentInstructions()" class="btn btn-sm">View Instructions</button>
+            </div>
+        </div>
+    </div>
+        <!-- Add this to your payment section -->
+    <div style="margin-top: 30px; text-align: center;">
+        <button onclick="showCCPPayment()" class="btn" style="background: #4CAF50; padding: 15px 30px;">
+            💳 Pay via CCP Mobile
+        </button>
+    </div>
+    <!-- Add this to your seller dashboard -->
+    <div style="background: rgba(76, 175, 80, 0.1); padding: 30px; border-radius: 20px; margin-top: 30px;">
+        <h3 style="color: #4CAF50;">💰 Pay via CCP</h3>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+            <div>
+                <p><strong>Our CCP Account:</strong></p>
+                <p style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; font-family: monospace; font-size: 18px;">
+                    0042745945
+                </p>
+                <p><strong>Key:</strong> 88</p>
+            </div>
+            
+            <div>
+                <p><strong>Amount Due:</strong> <span id="commissionAmount">0 DZD</span></p>
+                <p><strong>Reference:</strong> <span id="paymentRef">M7-XXX</span></p>
+                
+                <button onclick="calculateAndCopy()" class="btn btn-sm" style="margin-top: 10px;">
+                    📋 Copy Payment Details
+                </button>
+            </div>
+        </div>
+    </div>
+    <a href="https://play.google.com/store/apps/details?id=ru.bpc.mobilebank.bpc" target="_blank" class="btn" style="background: #4CAF50;">
+    📲 Download BaridiMob on Google Play
+    </a>
+    <a href="https://apps.apple.com/fr/app/baridimob/id1481839638" target="_blank" class="btn" style="background: #4CAF50;">
+    📲 Download BaridiMob on App Store
+    </a>
+</div>
+
+<script>
+function calculateAndCopy() {
+    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    let sellerProducts = JSON.parse(localStorage.getItem('sellerProducts_' + currentUser.id)) || [];
+    let totalRevenue = sellerProducts.reduce((sum, p) => sum + ((p.sold || 0) * p.price), 0);
+    let commission = Math.round(totalRevenue * 0.1);
+    
+    let details = `M7 MARKETPLACE PAYMENT
+━━━━━━━━━━━━━━━━━━━
+CCP: 0042745945
+Key: 88
+Amount: ${commission.toLocaleString()} DZD
+Reference: M7-${currentUser.id}
+Date: ${new Date().toLocaleDateString()}
+
+After payment, send screenshot to: m7.contact.us@gmail.com`;
+
+    navigator.clipboard.writeText(details);
+    alert('✅ Payment details copied!');
+}
+</script>
+</main>
+
+<footer>
+    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.html">About</a> | <a href="contact.html">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
+</footer>
+
+<script src="script.js"></script>
+<script>
+// Direct dashboard loader (bypasses potential script.js issues)
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 Seller dashboard loaded');
+    
+    // Update navbar
+    if (typeof updateNavbarForUser === 'function') {
+        updateNavbarForUser();
+    }
+    
+    // Try to use the main function if available
+    if (typeof loadSellerDashboard === 'function') {
+        console.log('✅ Using loadSellerDashboard from script.js');
+        loadSellerDashboard();
+    } else {
+        console.warn('⚠️ loadSellerDashboard not found, using direct loader');
+        
+        // Direct loader after 1 second
+        setTimeout(function() {
+            const container = document.getElementById('dashboard-content');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🔒</div>
+                        <h3>Please Login</h3>
+                        <p>You need to login to access the seller dashboard.</p>
+                        <a href="login.html" class="empty-btn">Login</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            if (currentUser.role !== 'seller') {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <h3>Seller Only</h3>
+                        <p>This page is only for sellers.</p>
+                        <a href="register.html?role=seller" class="empty-btn" style="background: #d96565;">Become a Seller</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Get seller products
+            const sellerProducts = JSON.parse(localStorage.getItem('sellerProducts_' + currentUser.id)) || [];
+            
+            // Calculate stats
+            const totalProducts = sellerProducts.length;
+            const totalStock = sellerProducts.reduce((sum, p) => sum + (p.quantity || 0), 0);
+            const totalSold = sellerProducts.reduce((sum, p) => sum + (p.sold || 0), 0);
+            const totalRevenue = sellerProducts.reduce((sum, p) => sum + ((p.sold || 0) * p.price), 0);
+            
+            // Welcome section
+            let html = `
+                <div class="welcome-section">
+                    <div class="welcome-text">
+                        <h1>📦 Welcome back, ${currentUser.store?.name || currentUser.fullName}!</h1>
+                        <p>Manage your products, track sales, and grow your business.</p>
+                    </div>
+                    <button onclick="logoutDirect()" class="logout-btn">🚪 Logout</button>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-label">Total Products</div>
+                        <div class="stat-value">${totalProducts}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-label">In Stock</div>
+                        <div class="stat-value">${totalStock}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-label">Revenue</div>
+                        <div class="stat-value">${totalRevenue.toLocaleString()} DZD</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-label">Items Sold</div>
+                        <div class="stat-value">${totalSold}</div>
+                    </div>
+                </div>
+                
+                <h2 class="section-title">⚡ Quick Actions</h2>
+                
+                <div class="quick-actions">
+                    <a href="seller-add-product.html" class="action-card">
+                        <div class="action-icon">➕</div>
+                        <h3>Add Product</h3>
+                        <p>List a new item for sale</p>
+                    </a>
+                    <a href="my-products.html" class="action-card">
+                        <div class="action-icon">📋</div>
+                        <h3>My Products</h3>
+                        <p>View and manage listings</p>
+                    </a>
+                    <a href="orders.html" class="action-card">
+                        <div class="action-icon">📦</div>
+                        <h3>My Orders</h3>
+                        <p>View customer orders</p>
+                    </a>
+                </div>
+            `;
+            
+            // Recent products section
+            if (sellerProducts.length > 0) {
+                html += `
+                    <div class="recent-products">
+                        <div class="recent-header">
+                            <h3>🆕 Recent Products</h3>
+                            <a href="my-products.html" class="view-all">View All →</a>
+                        </div>
+                `;
+                
+                // Show last 5 products
+                const recentProducts = sellerProducts.slice(-5).reverse();
+                
+                recentProducts.forEach(product => {
+                    html += `
+                        <div class="product-item">
+                            <img src="${product.image}" class="product-thumb" onerror="this.src='https://via.placeholder.com/60'">
+                            <div class="product-info">
+                                <h4>${product.name}</h4>
+                                <p>Stock: ${product.quantity} units</p>
+                            </div>
+                            <div class="product-price">${product.price.toLocaleString()} DZD</div>
+                            <div class="product-actions">
+                                <button onclick="editProductDirect(${product.id})" class="product-btn edit">✏️ Edit</button>
+                                <button onclick="deleteProductDirect(${product.id})" class="product-btn delete">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            } else {
+                html += `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <h3>No Products Yet</h3>
+                        <p>Start selling by adding your first product!</p>
+                        <a href="seller-add-product.html" class="empty-btn">Add Your First Product</a>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }, 500);
+    }
+});
+
+// Direct functions for fallback
+function logoutDirect() {
+    localStorage.removeItem('currentUser');
+    window.location.href = 'home.html';
+}
+
+function editProductDirect(productId) {
+    window.location.href = `my-products.html?edit=${productId}`;
+}
+
+function deleteProductDirect(productId) {
+    if (confirm('Are you sure you want to delete this product?')) {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        
+        // Remove from seller products
+        let sellerProducts = JSON.parse(localStorage.getItem('sellerProducts_' + currentUser.id)) || [];
+        sellerProducts = sellerProducts.filter(p => p.id !== productId);
+        localStorage.setItem('sellerProducts_' + currentUser.id, JSON.stringify(sellerProducts));
+        
+        // Remove from all products
+        let allProducts = JSON.parse(localStorage.getItem('allProducts')) || [];
+        allProducts = allProducts.filter(p => p.id !== productId);
+        localStorage.setItem('allProducts', JSON.stringify(allProducts));
+        
+        alert('✅ Product deleted');
+        location.reload();
+    }
+}
+
+function showPaymentInstructions() {
+    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    let sellerProducts = JSON.parse(localStorage.getItem('sellerProducts_' + currentUser.id)) || [];
+    let totalRevenue = sellerProducts.reduce((sum, p) => sum + ((p.sold || 0) * p.price), 0);
+    let commission = Math.round(totalRevenue * 0.1);
+    
+    alert(`
+📝 PAYMENT INSTRUCTIONS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+💰 Amount Due: ${commission.toLocaleString()} DZD
+
+🏦 Transfer to:
+━━━━━━━━━━━━━━━
+Bank: CCP / CPA
+Account: 1234 5678 9012 3456
+Name: M7 Marketplace
+
+📋 Reference: M7-${currentUser.id}
+(Use this so I know it's you!)
+
+📧 After payment:
+Send screenshot to: m7.contact.us@gmail.com
+
+✅ I'll mark it as paid within 24 hours
+    `);
+}
+
+</script>
+</body>
+</html>

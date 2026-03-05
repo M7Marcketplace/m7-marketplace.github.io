@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Products - M7 Marketplace</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="M7shooping.css">
+    <link rel="icon" type="image/x-icon" href="M7shooping.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 600px;
+            margin: 40px auto;
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .empty-icon {
+            font-size: 120px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .empty-state h1 {
+            font-size: 42px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #fff 0%, #d96565 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .empty-state p {
+            font-size: 18px;
+            margin: 20px auto;
+            max-width: 500px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            padding: 20px 0;
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        .product-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #d96565 0%, #4CAF50 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .product-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .product-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            transition: transform 0.3s ease;
+        }
+        
+        .product-card:hover img {
+            transform: scale(1.05);
+        }
+        
+        .product-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #d96565;
+        }
+        
+        .product-card .seller {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+        
+        .product-card .price {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #4CAF50;
+            margin: 15px 0;
+        }
+        
+        .product-card .stock {
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            opacity: 0.7;
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .product-actions .btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 1rem;
+        }
+        
+        /* Category Filter Styles */
+        .filter-section {
+            margin: 30px 0 20px;
+            text-align: center;
+        }
+        
+        .filter-title {
+            font-size: 1.1rem;
+            color: #d96565;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .category-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            min-height: 50px;
+        }
+        
+        .filter-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .filter-btn:hover {
+            background: rgba(217, 101, 101, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .filter-btn.active {
+            background: linear-gradient(135deg, #d96565 0%, #4CAF50 100%);
+            border-color: transparent;
+            box-shadow: 0 5px 15px rgba(217, 101, 101, 0.3);
+        }
+        
+        .filter-btn .count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            margin-left: 5px;
+        }
+        
+        .results-count {
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 10px;
+            padding: 5px;
+        }
+        
+        .no-products-message {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">
+        <img src="M7shooping.png" alt="M7 Shopping Logo" class="logo-img">
+        <span class="logo-text">M7 Marketplace</span>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="home.html">Home</a></li>
+            <li><a href="products.html" class="active">Products</a></li>
+            <li><a href="cart.html">Cart</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="auth.html">Account</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <div id="products-container">
+        <!-- Products will be loaded here by JavaScript -->
+        <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <h1>No Products Yet</h1>
+            <p>Be the first seller to add a product to our marketplace!</p>
+            <a href="register.html?role=seller" class="btn btn-success">Become a Seller</a>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.html">About</a> | <a href="contact.html">Contact</a></p>
+</footer>
+
+<script src="script.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof updateNavbarForUser === 'function') {
+            updateNavbarForUser();
+        }
+        // Force display products
+        if (typeof displayAllProducts === 'function') {
+            displayAllProducts();
+        }
+    });
+</script>
+</body>
+</html>
