@@ -1345,6 +1345,80 @@ function loadAccountPage() {
     }
 }
 
+function displayPayments(container) {
+    let payments = JSON.parse(localStorage.getItem('seller_payments')) || [];
+    let sellers = allUsers.filter(u => u.role === 'seller');
+    
+    // Calculate totals
+    let totalCollected = payments.reduce((sum, p) => sum + p.amount, 0);
+    let totalPending = 0;
+    sellers.forEach(s => {
+        if (!hasSellerPaid(s.id)) {
+            totalPending += calculateSellerCommission(s.id);
+        }
+    });
+    
+    let html = '<h2>💰 Payment Reports</h2>';
+    
+    // Summary cards
+    html += `
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+            <div class="stat-card">
+                <div class="stat-number">${totalCollected.toLocaleString()} DZD</div>
+                <div>Total Collected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" style="color: #FF9800;">${totalPending.toLocaleString()} DZD</div>
+                <div>Pending</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">${payments.length}</div>
+                <div>Total Payments</div>
+            </div>
+        </div>
+    `;
+    
+    // Payment history table
+    html += '<h3>📋 Payment History</h3>';
+    html += '<table><thead><tr><th>Date</th><th>Seller</th><th>Amount</th><th>Reference</th><th>Status</th></tr></thead><tbody>';
+    
+    payments.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    payments.forEach(p => {
+        let seller = allUsers.find(u => u.id == p.sellerId);
+        html += `
+            <tr>
+                <td>${p.date}</td>
+                <td>${seller?.fullName || 'Unknown'}</td>
+                <td><strong>${p.amount.toLocaleString()} DZD</strong></td>
+                <td>${p.reference || 'N/A'}</td>
+                <td><span class="payment-status payment-paid">✅ Paid</span></td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+// Update the switchTab function to include payments
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    let content = document.getElementById('admin-content');
+    
+    switch(tab) {
+        case 'users': displayUsers(content); break;
+        case 'sellers': displaySellers(content); break;
+        case 'products': displayProducts(content); break;
+        case 'orders': displayOrders(content); break;
+        case 'payments': displayPayments(content); break;
+        case 'deleted': displayDeleted(content); break;
+    }
+}
+
 function showEditProfileForm() {
     let currentUser = JSON.parse(localStorage.getItem('currentUser'));
     let newName = prompt('Enter new full name:', currentUser.fullName);
