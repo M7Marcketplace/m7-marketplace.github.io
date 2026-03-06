@@ -1983,20 +1983,121 @@ function updateOrderStatus(orderId, newStatus) {
         orderCard.dataset.status = newStatus;
     }
 }
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+// supabase-client.js
+// M7 Marketplace - Supabase Client Configuration
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBoyCWY2dqtToqL-D2J25-fQ_xEJsuVX4s",
-  authDomain: "m7-marketplace.firebaseapp.com",
-  projectId: "m7-marketplace",
-  storageBucket: "m7-marketplace.firebasestorage.app",
-  messagingSenderId: "79271667417",
-  appId: "1:79271667417:web:5ede45e27931cbc2df80c8"
-};
+// Your Supabase credentials
+const SUPABASE_URL = 'https://grqgypzdghmpzznzqjhe.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdycWd5cHpkZ2htcHp6bnpxamhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NTIyNDAsImV4cCI6MjA4ODMyODI0MH0.erUqVwXwFiu0PHc_Gda9hcMjuIh7X1oy1REBKv-p2vs';
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Global supabase variable (check if it already exists)
+window.SUPABASE = (function() {
+    // Don't redeclare if it already exists
+    if (window.supabaseClient) {
+        return window.supabaseClient;
+    }
+    
+    // Check if supabase library is loaded
+    if (typeof window.supabase === 'undefined') {
+        console.error('❌ Supabase library not loaded! Make sure the script tag is included.');
+        return null;
+    }
+    
+    try {
+        // Create new client
+        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
+            }
+        });
+        
+        console.log('✅ Supabase client initialized successfully');
+        return client;
+    } catch (error) {
+        console.error('❌ Error initializing Supabase:', error);
+        return null;
+    }
+})();
+
+// Make it globally available
+window.supabase = window.SUPABASE;
+window.supabaseClient = window.SUPABASE;
+
+// Check user on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkUser();
+});
+
+// Check current user and update UI
+async function checkUser() {
+    if (!window.SUPABASE) return;
+    
+    try {
+        const { data: { user }, error } = await window.SUPABASE.auth.getUser();
+        
+        if (error) throw error;
+        
+        if (user) {
+            // Get user profile from profiles table
+            const { data: profile, error: profileError } = await window.SUPABASE
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            
+            if (!profileError && profile) {
+                // Store in localStorage for backward compatibility
+                localStorage.setItem('currentUser', JSON.stringify(profile));
+                console.log('👤 Logged in as:', profile.full_name);
+            }
+        } else {
+            localStorage.removeItem('currentUser');
+            console.log('👤 Not logged in');
+        }
+        
+        // Update navbar
+        if (typeof updateNavbarForUser === 'function') {
+            updateNavbarForUser();
+        }
+        
+    } catch (error) {
+        console.error('Error checking user:', error);
+    }
+}
+
+// Logout function
+async function logout() {
+    if (!window.SUPABASE) return;
+    
+    try {
+        const { error } = await window.SUPABASE.auth.signOut();
+        if (error) throw error;
+        
+        localStorage.removeItem('currentUser');
+        
+        // Use existing notification if available
+        if (typeof showNotification === 'function') {
+            showNotification('👋 Logged out successfully', 'success');
+        } else {
+            alert('👋 Logged out successfully');
+        }
+        
+        setTimeout(() => {
+            window.location.href = 'home.html';
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Logout error:', error);
+        if (typeof showNotification === 'function') {
+            showNotification('❌ Error logging out', 'error');
+        } else {
+            alert('❌ Error logging out');
+        }
+    }
+}
+
+// Make functions globally available
+window.checkUser = checkUser;
+window.logout = logout;
