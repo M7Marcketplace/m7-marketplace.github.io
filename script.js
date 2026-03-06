@@ -1983,3 +1983,20 @@ function updateOrderStatus(orderId, newStatus) {
         orderCard.dataset.status = newStatus;
     }
 }
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBoyCWY2dqtToqL-D2J25-fQ_xEJsuVX4s",
+  authDomain: "m7-marketplace.firebaseapp.com",
+  projectId: "m7-marketplace",
+  storageBucket: "m7-marketplace.firebasestorage.app",
+  messagingSenderId: "79271667417",
+  appId: "1:79271667417:web:5ede45e27931cbc2df80c8"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
