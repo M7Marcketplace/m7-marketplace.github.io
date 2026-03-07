@@ -578,141 +578,99 @@ function placeOrder() {
 
 // ==================== PRODUCT FUNCTIONS ====================
 // ==================== DISPLAY ALL PRODUCTS WITH FILTER ====================
-function displayAllProducts() {
-    console.log('📦 Displaying all products...');
-    let container = document.getElementById('products-container');
-    if (!container) {
-        console.error('❌ Products container not found!');
-        return;
-    }
+// Replace your existing displayAllProducts() function
+async function displayProductsFromSupabase() {
+    const container = document.getElementById('products-container');
+    if (!container) return;
     
-    // Get products from localStorage
-    allProducts = JSON.parse(localStorage.getItem('allProducts')) || [];
-    console.log('Found products:', allProducts.length);
-    
-    if (allProducts.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">📭</div>
-                <h1>No Products Yet</h1>
-                <p>Be the first seller to add a product to our marketplace!</p>
-                <a href="register.html?role=seller" class="btn btn-success">Become a Seller</a>
-            </div>
-        `;
-        return;
-    }
-    
-    // Fix any products with missing categories
-    allProducts = allProducts.map(p => {
-        if (!p.category || p.category === 'undefined' || p.category === '') {
-            p.category = 'other';
-        }
-        return p;
-    });
-    
-    // Count products per category
-    let categoryCounts = {};
-    allProducts.forEach(p => {
-        categoryCounts[p.category] = (categoryCounts[p.category] || 0) + 1;
-    });
-    
-    // Get unique categories that actually have products
-    let categories = [...new Set(allProducts.map(p => p.category))].sort();
-    console.log('Categories with products:', categories);
-    
-    // Category icons mapping
-    const categoryIcons = {
-        'electronics': '📱',
-        'fashion': '👕',
-        'clothing': '👕',
-        'home': '🏠',
-        'garden': '🌱',
-        'crafts': '🎨',
-        'handmade': '✂️',
-        'sports': '⚽',
-        'books': '📚',
-        'food': '🍕',
-        'bakery': '🥐',
-        'desserts': '🍰',
-        'beauty': '💄',
-        'health': '💊',
-        'toys': '🧸',
-        'games': '🎮',
-        'automotive': '🚗',
-        'pet': '🐶',
-        'music': '🎵',
-        'art': '🖼️',
-        'office': '📎',
-        'baby': '👶',
-        'jewelry': '💍',
-        'shoes': '👟',
-        'bags': '👜',
-        'watches': '⌚',
-        'other': '🔄'
-    };
-    
-    // Build HTML with filter section
-    let html = '<h1 class="text-center">Our Products</h1>';
-    
-    // Filter section
-    html += `
-        <div class="filter-section">
-            <div class="filter-title">
-                <span>🔍 Filter by Category</span>
-            </div>
-            
-            <div class="category-filter" id="category-filter">
-                <button class="filter-btn active" onclick="filterProducts('all')" data-category="all">
-                    📋 All <span class="count">${allProducts.length}</span>
-                </button>
-    `;
-    
-    // Add buttons for categories that HAVE products
-    categories.forEach(cat => {
-        let icon = categoryIcons[cat] || '📦';
-        let displayName = cat.charAt(0).toUpperCase() + cat.slice(1);
-        let count = categoryCounts[cat] || 0;
+    try {
+        const { data: products, error } = await supabase
+            .from('products')
+            .select(`
+                *,
+                profiles!products_seller_id_fkey (
+                    full_name,
+                    username
+                ),
+                categories (
+                    name,
+                    icon
+                )
+            `)
+            .eq('is_active', true)
+            .order('created_at', { ascending: false });
+
+                const categoryIcons = {
+                    'electronics': '📱',
+                    'fashion': '👕',
+                    'clothing': '👕',
+                    'home': '🏠',
+                    'garden': '🌱',
+                    'crafts': '🎨',
+                    'handmade': '✂️',
+                    'sports': '⚽',
+                    'books': '📚',
+                    'food': '🍕',
+                    'bakery': '🥐',
+                    'desserts': '🍰',
+                    'beauty': '💄',
+                    'health': '💊',
+                    'toys': '🧸',
+                    'games': '🎮',
+                    'automotive': '🚗',
+                    'pet': '🐶',
+                    'music': '🎵',
+                    'art': '🖼️',
+                    'office': '📎',
+                    'baby': '👶',
+                    'jewelry': '💍',
+                    'shoes': '👟',
+                    'bags': '👜',
+                    'watches': '⌚',
+                    'other': '🔄'
+                };
         
-        html += `
-            <button class="filter-btn" onclick="filterProducts('${cat}')" data-category="${cat}">
-                ${icon} ${displayName} <span class="count">${count}</span>
-            </button>
-        `;
-    });
-    
-    html += `
-            </div>
-            
-            <div id="results-count" class="results-count">
-                Showing <span id="showing-count">${allProducts.length}</span> of ${allProducts.length} products
-            </div>
-        </div>
-    `;
-    
-    // Products grid
-    html += '<div class="products-grid" id="products-grid">';
-    
-    for (let p of allProducts) {
-        let icon = categoryIcons[p.category] || '📦';
+        if (error) throw error;
         
-        html += `
-            <div class="product-card" data-category="${p.category || 'other'}">
-                <img src="${p.image}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/300x300?text=No+Image'">
-                <h3>${p.name} ${icon}</h3>
-                <p class="seller">by ${p.sellerStore || p.sellerName}</p>
-                <p class="price">${(p.price || 0).toLocaleString()} DZD</p>
-                <p class="stock">📦 ${p.quantity || 0} left</p>
-                <div class="product-actions">
-                    <button onclick="viewProductDetails(${p.id})" class="btn btn-secondary">View</button>
-                    <button onclick="addToCart(${p.id})" class="btn btn-success">Add to Cart</button>
+        if (!products || products.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <h1>No Products Yet</h1>
+                    <p>Be the first seller to add a product!</p>
+                    <a href="register.html?role=seller" class="btn btn-success">Become a Seller</a>
                 </div>
-            </div>
-        `;
+            `;
+            return;
+        }
+        
+        let html = '<div class="products-grid">';
+        products.forEach(product => {
+            const sellerName = product.profiles?.full_name || 'Unknown Seller';
+            const categoryIcon = product.categories?.icon || '📦';
+            
+            html += `
+                <div class="product-card">
+                    <img src="${product.image_url || 'https://via.placeholder.com/300'}" alt="${product.name}">
+                    <h3>${product.name} ${categoryIcon}</h3>
+                    <p class="seller">by ${sellerName}</p>
+                    <p class="price">${product.price.toLocaleString()} DZD</p>
+                    <p class="stock">📦 ${product.quantity} left</p>
+                    <div class="product-actions">
+                        <button onclick="viewProductDetails('${product.id}')" class="btn btn-secondary">View</button>
+                        <button onclick="addToCart('${product.id}')" class="btn btn-success">Add to Cart</button>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        container.innerHTML = `<div class="error">Failed to load products: ${error.message}</div>`;
     }
-    
-    html += '</div>';
-    container.innerHTML = html;
-    console.log('✅ Products displayed with filter');
 }
 
 // ==================== FILTER PRODUCTS FUNCTION ====================
@@ -1182,70 +1140,65 @@ function initAddProductForm() {
     }
 }
 
-function addProduct(event) {
+// Replace your existing addProduct() function
+async function addProductToSupabase(event) {
     event.preventDefault();
     
-    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (!currentUser || currentUser.role !== 'seller') {
-        showNotification('Only sellers can add products!', 'error');
-        return false;
+    // Check if user is logged in
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (!user) {
+        showNotification('❌ Please login first', 'error');
+        window.location.href = 'login.html';
+        return;
     }
     
-    let name = document.getElementById('productName')?.value;
-    let category = document.getElementById('productCategory')?.value || 'other';
-    let price = document.getElementById('productPrice')?.value;
-    let quantity = document.getElementById('productQuantity')?.value || 1;
-    let condition = document.getElementById('productCondition')?.value || 'new';
-    let phone = document.getElementById('productPhone')?.value;
-    let description = document.getElementById('productDescription')?.value || '';
-    let imageInput = document.getElementById('productImage');
+    const name = document.getElementById('productName')?.value;
+    const category = document.getElementById('productCategory')?.value;
+    const price = document.getElementById('productPrice')?.value;
+    const quantity = document.getElementById('productQuantity')?.value || 1;
+    const phone = document.getElementById('productPhone')?.value;
+    const description = document.getElementById('productDescription')?.value || '';
     
-    if (!name || !price || !phone) {
-        showNotification('❌ Product name, price, and phone are required!', 'error');
-        return false;
+    if (!name || !price || !phone || !category) {
+        showNotification('❌ Please fill all required fields', 'error');
+        return;
     }
     
-    let newProduct = {
-        id: Date.now(),
-        name, category, price: parseInt(price), quantity: parseInt(quantity),
-        condition, phone, description,
-        sellerId: currentUser.id,
-        sellerName: currentUser.fullName,
-        sellerStore: currentUser.store?.name || currentUser.fullName,
-        dateAdded: new Date().toLocaleString(),
-        sold: 0
-    };
-    
-    if (imageInput.files && imageInput.files[0]) {
-        let reader = new FileReader();
-        reader.onload = function(e) {
-            let img = new Image();
-            img.src = e.target.result;
-            img.onload = function() {
-                let canvas = document.createElement('canvas');
-                let ctx = canvas.getContext('2d');
-                let maxWidth = 400, maxHeight = 400;
-                let width = img.width, height = img.height;
-                
-                if (width > height) {
-                    if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
-                } else {
-                    if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
+    try {
+        // Get category ID
+        const { data: categoryData } = await supabase
+            .from('categories')
+            .select('id')
+            .eq('slug', category)
+            .single();
+        
+        // Insert product
+        const { data, error } = await supabase
+            .from('products')
+            .insert([
+                {
+                    seller_id: user.id,
+                    category_id: categoryData?.id,
+                    name: name,
+                    price: parseInt(price),
+                    quantity: parseInt(quantity),
+                    phone_contact: phone,
+                    description: description,
+                    condition: document.getElementById('productCondition')?.value || 'new',
+                    image_url: 'https://via.placeholder.com/300x300?text=No+Image'
                 }
-                
-                canvas.width = width; canvas.height = height;
-                ctx.drawImage(img, 0, 0, width, height);
-                newProduct.image = canvas.toDataURL('image/jpeg', 0.6);
-                saveProductToStorage(newProduct, currentUser);
-            };
-        };
-        reader.readAsDataURL(imageInput.files[0]);
-    } else {
-        newProduct.image = 'https://via.placeholder.com/300x300?text=No+Image';
-        saveProductToStorage(newProduct, currentUser);
+            ]);
+        
+        if (error) throw error;
+        
+        showNotification('✅ Product added successfully!', 'success');
+        setTimeout(() => window.location.href = 'my-products.html', 1500);
+        
+    } catch (error) {
+        console.error('Error adding product:', error);
+        showNotification('❌ ' + error.message, 'error');
     }
-    
-    return false;
 }
 
 function saveProductToStorage(product, user) {
@@ -1491,40 +1444,42 @@ function initLoginForm() {
     if (form) form.onsubmit = function(e) { e.preventDefault(); login(); };
 }
 
-function login() {
-    let email = document.getElementById('email')?.value;
-    let password = document.getElementById('password')?.value;
-    if (!email || !password) { showNotification('❌ Please fill all fields', 'error'); return; }
+// Replace your existing login() function
+async function loginWithSupabase() {
+    const email = document.getElementById('email')?.value;
+    const password = document.getElementById('password')?.value;
     
-    let users = JSON.parse(localStorage.getItem('users')) || [];
-    let user = users.find(u => u.email === email && u.password === password);
-    
-    if (user) {
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        currentUser = user;
-        updateNavbarForUser();
-        showNotification(`✅ Welcome back, ${user.fullName}!`, 'success');
-        
-        let redirect = new URLSearchParams(window.location.search).get('redirect');
-        if (redirect === 'checkout') window.location.href = 'checkout.html';
-        else if (user.role === 'seller') window.location.href = 'seller-dashboard.html';
-        else window.location.href = 'home.html';
-    } else {
-        showNotification('❌ Invalid email or password', 'error');
+    if (!email || !password) {
+        showNotification('❌ Please enter email and password', 'error');
+        return;
     }
-        // After user logs in
-    if (user.role === 'seller') {
-        let paymentStatus = localStorage.getItem('paid_' + user.id);
-        if (paymentStatus === 'paid') {
-            showNotification('✅ Your latest payment is up to date!', 'success');
+    
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+        
+        if (error) throw error;
+        
+        showNotification('✅ Login successful!', 'success');
+        
+        // Check user role and redirect
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+        
+        if (profile?.role === 'seller') {
+            window.location.href = 'seller-dashboard.html';
         } else {
-            let products = JSON.parse(localStorage.getItem('sellerProducts_' + user.id)) || [];
-            let revenue = products.reduce((sum, p) => sum + ((p.sold || 0) * p.price), 0);
-            let commission = Math.round(revenue * 0.1);
-            if (commission > 0) {
-                showNotification(`💰 You have ${commission.toLocaleString()} DZD commission due`, 'warning');
-            }
+            window.location.href = 'home.html';
         }
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        showNotification('❌ ' + error.message, 'error');
     }
 }
 
@@ -1689,68 +1644,45 @@ function initRegisterForm() {
     if (form) form.onsubmit = function(e) { e.preventDefault(); register(); };
 }
 
-function register() {
-    let fullName = document.getElementById('fullName')?.value;
-    let email = document.getElementById('email')?.value;
-    let username = document.getElementById('username')?.value;
-    let password = document.getElementById('password')?.value;
-    let confirmPassword = document.getElementById('confirmPassword')?.value;
-    let terms = document.getElementById('terms')?.checked;
-    let role = document.getElementById('role')?.value;
+// Replace your existing register() function with this
+async function registerWithSupabase() {
+    const fullName = document.getElementById('fullName')?.value;
+    const email = document.getElementById('email')?.value;
+    const username = document.getElementById('username')?.value;
+    const password = document.getElementById('password')?.value;
+    const role = document.getElementById('role')?.value || 'buyer';
     
-    if (!fullName || !email || !username || !password || !confirmPassword) {
-        showNotification('❌ Please fill all required fields', 'error'); return;
-    }
-    if (password !== confirmPassword) {
-        showNotification('❌ Passwords do not match', 'error'); return;
-    }
-    if (!terms) {
-        showNotification('❌ You must agree to the Terms and Conditions', 'error'); return;
+    if (!fullName || !email || !username || !password) {
+        showNotification('❌ Please fill all required fields', 'error');
+        return;
     }
     
-    let users = JSON.parse(localStorage.getItem('users')) || [];
-    if (users.some(u => u.email === email)) {
-        showNotification('❌ Email already exists', 'error'); return;
+    try {
+        // 1. Sign up with Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    full_name: fullName,
+                    username: username,
+                    role: role
+                }
+            }
+        });
+        
+        if (authError) throw authError;
+        
+        showNotification('✅ Registration successful! Please check your email for confirmation.', 'success');
+        
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 3000);
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        showNotification('❌ ' + error.message, 'error');
     }
-    if (users.some(u => u.username === username)) {
-        showNotification('❌ Username already taken', 'error'); return;
-    }
-    
-    let profileImage = document.getElementById('profile-image-data')?.value || '';
-    
-    let newUser = {
-        id: Date.now(),
-        fullName, email, username, password,
-        gender: document.getElementById('gender')?.value || 'Not specified',
-        profilePic: profileImage || document.getElementById('profilePic')?.value || '👤',
-        role: role || 'buyer',
-        dob: document.getElementById('dob')?.value || '',
-        phone: document.getElementById('phone')?.value || '',
-        registrationDate: new Date().toLocaleString()
-    };
-    
-    if (role === 'seller') {
-        let storeName = document.getElementById('storeName')?.value;
-        if (!storeName) { showNotification('❌ Store name is required for sellers', 'error'); return; }
-        newUser.store = {
-            name: storeName,
-            description: document.getElementById('storeDescription')?.value || '',
-            address: document.getElementById('businessAddress')?.value || ''
-        };
-    }
-    
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
-    currentUser = newUser;
-    updateNavbarForUser();
-    
-    showNotification('✅ Registration successful! Welcome to M7 Marketplace!', 'success');
-    
-    setTimeout(() => {
-        if (role === 'seller') window.location.href = 'seller-dashboard.html';
-        else window.location.href = 'home.html';
-    }, 1500);
 }
 
 // ==================== CONTACT FUNCTIONS ====================
@@ -2101,3 +2033,27 @@ async function logout() {
 // Make functions globally available
 window.checkUser = checkUser;
 window.logout = logout;
+// Add this to your admin panel page
+async function loadAdminData() {
+    // Get all users
+    const { data: users } = await supabase
+        .from('profiles')
+        .select('*');
+    
+    // Get all products
+    const { data: products } = await supabase
+        .from('products')
+        .select('*, profiles(full_name)');
+    
+    // Get all orders
+    const { data: orders } = await supabase
+        .from('orders')
+        .select('*');
+    
+    console.log('Users:', users);
+    console.log('Products:', products);
+    console.log('Orders:', orders);
+    
+    // Update your admin panel display
+    updateAdminDisplay(users, products, orders);
+}
