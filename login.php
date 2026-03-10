@@ -1,3 +1,44 @@
+<?php
+require_once 'config.php';
+
+$error = '';
+
+// Check if already logged in
+if (isLoggedIn()) {
+    header('Location: home.php');
+    exit;
+}
+
+// Process login form
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = $_POST['email'] ?? '';
+    $password = $_POST['password'] ?? '';
+    
+    if (empty($email) || empty($password)) {
+        $error = 'Email and password are required';
+    } else {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+        
+        if ($user && password_verify($password, $user['password'])) {
+            // Remove password from session data
+            unset($user['password']);
+            $_SESSION['user'] = $user;
+            
+            // Redirect based on role
+            if ($user['role'] === 'seller') {
+                header('Location: seller-dashboard.php');
+            } else {
+                header('Location: home.php');
+            }
+            exit;
+        } else {
+            $error = 'Invalid email or password';
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +49,7 @@
     <link rel="icon" type="image/x-icon" href="M7shooping.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
+        /* Keep all your existing CSS exactly as is */
         .login-wrapper {
             min-height: calc(100vh - 200px);
             display: flex;
@@ -360,22 +402,7 @@
 </head>
 <body>
 
-<header>
-    <div class="logo">
-        <img src="M7shooping.png" alt="M7 Shopping Logo" class="logo-img">
-        <span class="logo-text">M7 Marketplace</span>
-    </div>
-    <nav>
-        <ul>
-            <li><a href="home.html">🏠 Home</a></li>
-            <li><a href="products.html">🛍️ Products</a></li>
-            <li><a href="cart.html">🛒 Cart</a></li>
-            <li><a href="about.html">📖 About</a></li>
-            <li><a href="contact.html" class="active">📞 Contact</a></li>
-            <li><a href="auth.html">👤 Account</a></li>
-        </ul>
-    </nav>
-</header>
+<?php include 'navbar.php'; ?>
 
 <main>
     <div class="login-wrapper">
@@ -385,14 +412,16 @@
                 <p>Please login to your account</p>
             </div>
             
-            <div id="message-container"></div>
+            <?php if ($error): ?>
+                <div class="error-message"><?php echo $error; ?></div>
+            <?php endif; ?>
             
-            <form id="login-form">
+            <form method="POST" action="">
                 <div class="input-group">
                     <label>Email Address</label>
                     <div class="input-icon">
                         <i>📧</i>
-                        <input type="email" id="email" placeholder="Enter your email" required>
+                        <input type="email" name="email" placeholder="Enter your email" required>
                     </div>
                 </div>
                 
@@ -400,13 +429,13 @@
                     <label>Password</label>
                     <div class="input-icon">
                         <i>🔑</i>
-                        <input type="password" id="password" placeholder="Enter your password" required>
+                        <input type="password" name="password" placeholder="Enter your password" required>
                     </div>
                 </div>
                 
                 <div class="remember-forgot">
                     <label class="remember-me">
-                        <input type="checkbox" id="remember"> 
+                        <input type="checkbox" name="remember"> 
                         <span>Remember me</span>
                     </label>
                     <a href="#" class="forgot-link">Forgot password?</a>
@@ -428,7 +457,7 @@
                 </div>
                 
                 <div class="register-link">
-                    <p>Don't have an account?<a href="register.html">Register here</a></p>
+                    <p>Don't have an account?<a href="register.php">Register here</a></p>
                 </div>
             </form>
         </div>
@@ -436,105 +465,9 @@
 </main>
 
 <footer>
-    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.html">About</a> | <a href="contact.html">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
+    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.php">About</a> | <a href="contact.php">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
 </footer>
 
-<script src="script.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Update navbar
-    if (typeof updateNavbarForUser === 'function') {
-        updateNavbarForUser();
-    }
-    
-    // Check if user is already logged in
-    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (currentUser) {
-        // Redirect to home if already logged in
-        window.location.href = 'home.html';
-    }
-    
-    // Handle login form submission
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            // Simple validation
-            if (!email || !password) {
-                showMessage('❌ Please fill in all fields', 'error');
-                return;
-            }
-            
-            // Get users from localStorage
-            const users = JSON.parse(localStorage.getItem('users')) || [];
-            
-            // Find user
-            const user = users.find(u => u.email === email && u.password === password);
-            
-            if (user) {
-                // Save to localStorage
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                
-                // Show success message
-                showMessage('✅ Login successful! Redirecting...', 'success');
-                
-                // Redirect after delay
-                setTimeout(() => {
-                    // Check for redirect parameter
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const redirect = urlParams.get('redirect');
-                    
-                    if (redirect === 'checkout') {
-                        window.location.href = 'checkout.html';
-                    } else if (user.role === 'seller') {
-                        window.location.href = 'seller-dashboard.html';
-                    } else {
-                        window.location.href = 'home.html';
-                    }
-                }, 1500);
-            } else {
-                showMessage('❌ Invalid email or password', 'error');
-            }
-        });
-    }
-});
-
-// Show message function
-function showMessage(message, type) {
-    const container = document.getElementById('message-container');
-    if (container) {
-        container.innerHTML = `<div class="${type === 'error' ? 'error-message' : 'success-message'}">${message}</div>`;
-        
-        // Auto hide after 3 seconds for success messages
-        if (type === 'success') {
-            setTimeout(() => {
-                container.innerHTML = '';
-            }, 3000);
-        }
-    }
-}
-
-// Check for redirect parameter on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const redirect = urlParams.get('redirect');
-    
-    if (redirect === 'checkout') {
-        const messageContainer = document.getElementById('message-container');
-        if (messageContainer) {
-            messageContainer.innerHTML = '<div class="info-message">🔒 Please login to complete your purchase</div>';
-        }
-    }
-});
-</script>
-<script src="script.js"></script>
-<!-- Add these at the bottom of each page, just before </body> -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
