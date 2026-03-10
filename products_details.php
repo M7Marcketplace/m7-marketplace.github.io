@@ -1,3 +1,6 @@
+<?php
+require_once 'config.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -402,72 +405,192 @@
 </head>
 <body>
 
-<header>
-    <div class="logo">
-        <img src="M7shooping.png" alt="M7 Shopping Logo" class="logo-img">
-        <span class="logo-text">M7 Marketplace</span>
-    </div>
-    <nav>
-        <ul>
-            <li><a href="home.html">🏠 Home</a></li>
-            <li><a href="products.html">🛍️ Products</a></li>
-            <li><a href="cart.html">🛒 Cart</a></li>
-            <li><a href="about.html">📖 About</a></li>
-            <li><a href="contact.html" class="active">📞 Contact</a></li>
-            <li><a href="auth.html">👤 Account</a></li>
-        </ul>
-    </nav>
-</header>
+<?php
+require_once 'config.php';
+
+$productId = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+// Fetch product details
+$stmt = $pdo->prepare("
+    SELECT p.*, u.full_name as seller_name, u.phone as seller_phone, 
+           s.store_name, s.store_description, c.name as category_name, c.icon as category_icon
+    FROM products p
+    JOIN users u ON p.seller_id = u.id
+    LEFT JOIN seller_stores s ON p.seller_id = s.seller_id
+    JOIN categories c ON p.category_id = c.id
+    WHERE p.id = ? AND p.is_active = 1
+");
+$stmt->execute([$productId]);
+$product = $stmt->fetch();
+
+if (!$product) {
+    $product = null;
+}
+?>
+
+<?php include 'navbar.php'; ?>
 
 <main>
     <div id="details-container">
-        <!-- Product details will be loaded here by JavaScript -->
-        <div class="loading-state">
-            <div class="loading-spinner"></div>
-            <h2>Loading Product Details</h2>
-            <p style="opacity: 0.7;">Please wait while we fetch the product information...</p>
+        <?php if (!$product): ?>
+            <div class="error-state">
+                <div class="error-icon">🔍</div>
+                <h2>Product Not Found</h2>
+                <p style="margin: 20px auto; max-width: 400px; opacity: 0.7;">
+                    The product you're looking for doesn't exist or has been removed.
+                </p>
+                <a href="products.php" class="btn" style="margin-top: 20px;">Browse Products</a>
+            </div>
+        <?php else: 
+            $whatsappNumber = preg_replace('/[^0-9]/', '', $product['seller_phone']);
+            $stockStatus = $product['quantity'] > 10 ? 'in-stock' : ($product['quantity'] > 0 ? 'low-stock' : 'out-of-stock');
+            $stockText = $product['quantity'] > 10 ? 'In Stock' : ($product['quantity'] > 0 ? 'Low Stock' : 'Out of Stock');
+        ?>
+        
+        <div class="product-detail-container">
+            <div class="product-gallery">
+                <div class="main-image-container">
+                    <img src="<?php echo $product['image_url'] ?? 'https://via.placeholder.com/600'; ?>" 
+                         alt="<?php echo htmlspecialchars($product['name']); ?>" 
+                         class="main-image"
+                         onerror="this.src='https://via.placeholder.com/600'">
+                </div>
+                
+                <div class="product-info">
+                    <h2><?php echo htmlspecialchars($product['name']); ?> <?php echo $product['category_icon']; ?></h2>
+                    
+                    <span class="seller-badge">
+                        Sold by: <?php echo htmlspecialchars($product['store_name'] ?? $product['seller_name']); ?>
+                    </span>
+                    
+                    <div class="price-tag"><?php echo number_format($product['price']); ?> DZD</div>
+                    
+                    <div class="stock-status <?php echo $stockStatus; ?>">
+                        <?php echo $stockText; ?> (<?php echo $product['quantity']; ?> available)
+                    </div>
+                    
+                    <div class="seller-info">
+                        <h3>📋 Product Details</h3>
+                        
+                        <div class="detail-row">
+                            <span class="detail-label">Category:</span>
+                            <span class="detail-value"><?php echo $product['category_icon']; ?> <?php echo $product['category_name']; ?></span>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <span class="detail-label">Condition:</span>
+                            <span class="detail-value"><?php echo ucfirst($product['condition']); ?></span>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <span class="detail-label">Added:</span>
+                            <span class="detail-value"><?php echo date('d M Y', strtotime($product['created_at'])); ?></span>
+                        </div>
+                        
+                        <?php if ($product['seller_phone']): ?>
+                        <div class="detail-row">
+                            <span class="detail-label">📞 Contact:</span>
+                            <span class="detail-value"><?php echo htmlspecialchars($product['seller_phone']); ?></span>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <?php if ($product['seller_phone']): ?>
+                    <div class="contact-section">
+                        <h3>📱 Contact Seller</h3>
+                        <p style="margin-bottom: 20px;">Have questions? Reach out directly!</p>
+                        
+                        <div class="contact-buttons">
+                            <a href="tel:<?php echo $product['seller_phone']; ?>" class="contact-btn call">📞 Call</a>
+                            
+                            <?php if ($whatsappNumber): ?>
+                            <a href="https://wa.me/<?php echo $whatsappNumber; ?>" target="_blank" class="contact-btn whatsapp">💬 WhatsApp</a>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="phone-display">
+                            <strong>Phone:</strong> <?php echo htmlspecialchars($product['seller_phone']); ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <h3>📝 Description</h3>
+                    <p style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px;">
+                        <?php echo nl2br(htmlspecialchars($product['description'] ?? 'No description provided.')); ?>
+                    </p>
+                    
+                    <div class="quantity-selector">
+                        <label>Quantity:</label>
+                        <div class="quantity-control">
+                            <button class="quantity-btn" onclick="decrementQuantity()" <?php echo $product['quantity'] <= 0 ? 'disabled' : ''; ?>>−</button>
+                            <span class="quantity-value" id="quantity-value">1</span>
+                            <button class="quantity-btn" onclick="incrementQuantity(<?php echo $product['quantity']; ?>)" <?php echo $product['quantity'] <= 0 ? 'disabled' : ''; ?>>+</button>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button onclick="addToCartWithQuantity(
+                            <?php echo $product['id']; ?>,
+                            '<?php echo addslashes($product['name']); ?>',
+                            <?php echo $product['price']; ?>,
+                            '<?php echo addslashes($product['image_url'] ?? 'https://via.placeholder.com/300'); ?>',
+                            <?php echo $product['seller_id']; ?>,
+                            '<?php echo addslashes($product['store_name'] ?? $product['seller_name']); ?>'
+                        )" class="btn btn-success" <?php echo $product['quantity'] <= 0 ? 'disabled' : ''; ?>>
+                            🛒 Add to Cart
+                        </button>
+                        <button onclick="history.back()" class="btn btn-secondary">← Back</button>
+                    </div>
+                </div>
+            </div>
         </div>
+        
+        <script>
+            let currentQuantity = 1;
+            const maxQuantity = <?php echo $product['quantity']; ?>;
+            
+            function incrementQuantity(max) {
+                if (currentQuantity < max) {
+                    currentQuantity++;
+                    document.getElementById('quantity-value').textContent = currentQuantity;
+                }
+            }
+            
+            function decrementQuantity() {
+                if (currentQuantity > 1) {
+                    currentQuantity--;
+                    document.getElementById('quantity-value').textContent = currentQuantity;
+                }
+            }
+            
+            function addToCartWithQuantity(id, name, price, image, sellerId, sellerName) {
+                for (let i = 0; i < currentQuantity; i++) {
+                    // This will add the item multiple times or you can modify your addToCart function to accept quantity
+                    if (i === 0) {
+                        addToCart(id, name, price, image, sellerId, sellerName);
+                    } else {
+                        // For additional quantities, just increment the existing item
+                        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+                        let existingItem = cart.find(item => item.id == id);
+                        if (existingItem) {
+                            existingItem.quantity += 1;
+                            localStorage.setItem('cart', JSON.stringify(cart));
+                        }
+                    }
+                }
+                showNotification(`✅ Added ${currentQuantity} x ${name} to cart!`, 'success');
+                updateCartCount();
+            }
+        </script>
+        
+        <?php endif; ?>
     </div>
 </main>
 
 <footer>
-    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.html">About</a> | <a href="contact.html">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
+    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.php">About</a> | <a href="contact.php">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
 </footer>
 
-<script src="script.js"></script>
-<script>
-    // Additional check for navbar update on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof updateNavbarForUser === 'function') {
-            updateNavbarForUser();
-        }
-        
-        // Also check if we have a product ID in the URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const productId = urlParams.get('id');
-        
-        if (!productId) {
-            // If no product ID, show error message
-            const container = document.getElementById('details-container');
-            if (container) {
-                container.innerHTML = `
-                    <div class="error-state">
-                        <div class="error-icon">🔍</div>
-                        <h2>Product Not Found</h2>
-                        <p style="margin: 20px auto; max-width: 400px; opacity: 0.7;">
-                            The product you're looking for doesn't exist or has been removed.
-                        </p>
-                        <a href="products.html" class="btn" style="margin-top: 20px;">Browse Products</a>
-                    </div>
-                `;
-            }
-        }
-    });
-</script>
-<script src="script.js"></script>
-<!-- Add these at the bottom of each page, just before </body> -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
