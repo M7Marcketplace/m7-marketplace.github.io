@@ -1,3 +1,6 @@
+<?php
+require_once 'config.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -218,57 +221,119 @@
 </head>
 <body>
 
-<header>
-    <div class="logo">
-        <img src="M7shooping.png" alt="M7 Shopping Logo" class="logo-img">
-        <span class="logo-text">M7 Marketplace</span>
-    </div>
-    <nav>
-        <ul>
-            <li><a href="home.html">🏠 Home</a></li>
-            <li><a href="products.html">🛍️ Products</a></li>
-            <li><a href="cart.html">🛒 Cart</a></li>
-            <li><a href="about.html">📖 About</a></li>
-            <li><a href="contact.html" class="active">📞 Contact</a></li>
-            <li><a href="auth.html">👤 Account</a></li>
-        </ul>
-    </nav>
-</header>
+<?php
+require_once 'config.php';
+
+// Get category filter from URL
+$selectedCategory = $_GET['category'] ?? 'all';
+
+// Get all categories for filter
+$categories = $pdo->query("SELECT * FROM categories ORDER BY name")->fetchAll();
+
+// Build products query
+$query = "
+    SELECT p.*, u.full_name as seller_name, s.store_name, c.name as category_name, c.icon as category_icon
+    FROM products p
+    JOIN users u ON p.seller_id = u.id
+    LEFT JOIN seller_stores s ON p.seller_id = s.seller_id
+    JOIN categories c ON p.category_id = c.id
+    WHERE p.is_active = 1
+";
+
+if ($selectedCategory !== 'all') {
+    $query .= " AND c.slug = " . $pdo->quote($selectedCategory);
+}
+
+$query .= " ORDER BY p.created_at DESC";
+
+$products = $pdo->query($query)->fetchAll();
+
+// Get counts for each category
+$counts = [];
+foreach ($categories as $cat) {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM products p WHERE p.category_id = ? AND p.is_active = 1");
+    $stmt->execute([$cat['id']]);
+    $counts[$cat['slug']] = $stmt->fetchColumn();
+}
+$totalProducts = $pdo->query("SELECT COUNT(*) FROM products WHERE is_active = 1")->fetchColumn();
+?>
+
+<?php include 'navbar.php'; ?>
 
 <main>
     <div id="products-container">
-        <!-- Products will be loaded here by JavaScript -->
-        <div class="empty-state">
-            <div class="empty-icon">📭</div>
-            <h1>No Products Yet</h1>
-            <p>Be the first seller to add a product to our marketplace!</p>
-            <a href="register.html?role=seller" class="btn btn-success">Become a Seller</a>
-        </div>
+        <?php if (empty($products)): ?>
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <h1>No Products Yet</h1>
+                <p>Be the first seller to add a product to our marketplace!</p>
+                <a href="register.php?role=seller" class="btn btn-success">Become a Seller</a>
+            </div>
+        <?php else: ?>
+            
+            <h1 class="text-center">Our Products</h1>
+            
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <div class="filter-title">
+                    <span>🔍 Filter by Category</span>
+                </div>
+                
+                <div class="category-filter" id="category-filter">
+                    <button class="filter-btn <?php echo $selectedCategory === 'all' ? 'active' : ''; ?>" onclick="window.location.href='products.php'">
+                        📋 All <span class="count"><?php echo $totalProducts; ?></span>
+                    </button>
+                    
+                    <?php foreach ($categories as $cat): ?>
+                        <?php if (($counts[$cat['slug']] ?? 0) > 0): ?>
+                        <button class="filter-btn <?php echo $selectedCategory === $cat['slug'] ? 'active' : ''; ?>" 
+                                onclick="window.location.href='products.php?category=<?php echo $cat['slug']; ?>'">
+                            <?php echo $cat['icon']; ?> <?php echo $cat['name']; ?> 
+                            <span class="count"><?php echo $counts[$cat['slug']] ?? 0; ?></span>
+                        </button>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+                
+                <div class="results-count">
+                    Showing <span id="showing-count"><?php echo count($products); ?></span> of <?php echo $totalProducts; ?> products
+                </div>
+            </div>
+            
+            <!-- Products Grid -->
+            <div class="products-grid" id="products-grid">
+                <?php foreach ($products as $product): ?>
+                <div class="product-card" data-category="<?php echo $product['category_name']; ?>">
+                    <img src="<?php echo $product['image_url'] ?? 'https://via.placeholder.com/300x300?text=No+Image'; ?>" 
+                         alt="<?php echo htmlspecialchars($product['name']); ?>" 
+                         onerror="this.src='https://via.placeholder.com/300x300?text=No+Image'">
+                    <h3><?php echo htmlspecialchars($product['name']); ?> <?php echo $product['category_icon']; ?></h3>
+                    <p class="seller">by <?php echo htmlspecialchars($product['store_name'] ?? $product['seller_name']); ?></p>
+                    <p class="price"><?php echo number_format($product['price']); ?> DZD</p>
+                    <p class="stock">📦 <?php echo $product['quantity']; ?> left</p>
+                    <div class="product-actions">
+                        <button onclick="viewProductDetails(<?php echo $product['id']; ?>)" class="btn btn-secondary">View</button>
+                        <button onclick="addToCart(
+                            <?php echo $product['id']; ?>,
+                            '<?php echo addslashes($product['name']); ?>',
+                            <?php echo $product['price']; ?>,
+                            '<?php echo addslashes($product['image_url'] ?? 'https://via.placeholder.com/300'); ?>',
+                            <?php echo $product['seller_id']; ?>,
+                            '<?php echo addslashes($product['store_name'] ?? $product['seller_name']); ?>'
+                        )" class="btn btn-success">Add to Cart</button>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            
+        <?php endif; ?>
     </div>
 </main>
 
 <footer>
-    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.html">About</a> | <a href="contact.html">Contact</a></p>
+    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.php">About</a> | <a href="contact.php">Contact</a></p>
 </footer>
 
 <script src="script.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof updateNavbarForUser === 'function') {
-            updateNavbarForUser();
-        }
-        // Force display products
-        if (typeof displayAllProducts === 'function') {
-            displayAllProducts();
-        }
-    });
-</script>
-<script src="script.js"></script>
-<!-- Add these at the bottom of each page, just before </body> -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
-<script src="script.js"></script>
 </body>
 </html>
-
-
