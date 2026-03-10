@@ -1,3 +1,6 @@
+<?php
+require_once 'config.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -488,250 +491,118 @@
 </head>
 <body>
 
-<header>
-    <div class="logo">
-        <img src="M7shooping.png" alt="M7 Shopping Logo" class="logo-img">
-        <span class="logo-text">M7 Marketplace</span>
-    </div>
-    <nav>
-        <ul>
-            <li><a href="home.html">🏠 Home</a></li>
-            <li><a href="products.html">🛍️ Products</a></li>
-            <li><a href="cart.html">🛒 Cart</a></li>
-            <li><a href="about.html">📖 About</a></li>
-            <li><a href="contact.html" class="active">📞 Contact</a></li>
-            <li><a href="auth.html">👤 Account</a></li>
-        </ul>
-    </nav>
-</header>
+<?php
+require_once 'config.php';
+$currentUser = getCurrentUser();
+?>
+
+<?php include 'navbar.php'; ?>
 
 <main>
     <div class="account-container">
-        <!-- Account content will be loaded by JavaScript -->
         <div id="account-container">
-            <!-- Content will be loaded by JavaScript -->
-            <div class="loading-state">
-                <div class="loading-spinner"></div>
-                <p>Loading your account...</p>
-            </div>
+            <?php if ($currentUser): ?>
+                <?php
+                // Get store info if seller
+                $store = null;
+                if ($currentUser['role'] === 'seller') {
+                    $stmt = $pdo->prepare("SELECT * FROM seller_stores WHERE seller_id = ?");
+                    $stmt->execute([$currentUser['id']]);
+                    $store = $stmt->fetch();
+                }
+                ?>
+                
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="avatar-container">
+                            <div class="profile-avatar"><?php echo $currentUser['profile_pic'] ?? '👤'; ?></div>
+                            <div class="edit-avatar" onclick="alert('Profile picture upload coming soon!')">✏️</div>
+                        </div>
+                        <div class="profile-title">
+                            <h1><?php echo htmlspecialchars($currentUser['full_name']); ?></h1>
+                            <span class="profile-badge <?php echo $currentUser['role']; ?>">
+                                <?php echo $currentUser['role'] === 'seller' ? '🛒 SELLER' : '👤 BUYER'; ?>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">📧 Email</div>
+                            <div class="info-value"><?php echo htmlspecialchars($currentUser['email']); ?></div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">🔑 Username</div>
+                            <div class="info-value"><?php echo htmlspecialchars($currentUser['username']); ?></div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">⚥ Gender</div>
+                            <div class="info-value"><?php echo htmlspecialchars($currentUser['gender'] ?? 'Not specified'); ?></div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">📅 Joined</div>
+                            <div class="info-value"><?php echo date('d M Y', strtotime($currentUser['registration_date'])); ?></div>
+                        </div>
+                        <?php if ($currentUser['phone']): ?>
+                        <div class="info-item">
+                            <div class="info-label">📱 Phone</div>
+                            <div class="info-value"><?php echo htmlspecialchars($currentUser['phone']); ?></div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <?php if ($currentUser['role'] === 'seller' && $store): ?>
+                    <div class="store-section">
+                        <h3>🏪 Store Information</h3>
+                        <div class="store-grid">
+                            <div class="store-item">
+                                <div class="label">Store Name</div>
+                                <div class="value"><?php echo htmlspecialchars($store['store_name']); ?></div>
+                            </div>
+                            <div class="store-item">
+                                <div class="label">Description</div>
+                                <div class="value"><?php echo htmlspecialchars($store['store_description'] ?? 'No description'); ?></div>
+                            </div>
+                            <div class="store-item">
+                                <div class="label">Address</div>
+                                <div class="value"><?php echo htmlspecialchars($store['business_address'] ?? 'No address'); ?></div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <div class="action-buttons">
+                        <button onclick="alert('Edit profile coming soon!')" class="action-btn edit">✏️ Edit Profile</button>
+                        <button onclick="alert('Change password coming soon!')" class="action-btn password">🔑 Change Password</button>
+                        <?php if ($currentUser['role'] === 'seller'): ?>
+                        <a href="seller-dashboard.php" class="action-btn dashboard">📊 Dashboard</a>
+                        <?php endif; ?>
+                        <a href="logout.php" class="action-btn logout">🚪 Logout</a>
+                    </div>
+                </div>
+                
+            <?php else: ?>
+                <!-- Guest View -->
+                <div class="guest-container">
+                    <div class="guest-card">
+                        <div class="guest-icon">👋</div>
+                        <h1>Welcome!</h1>
+                        <p>Join M7 Marketplace today to start shopping or selling. Create an account or login to continue.</p>
+                        <div class="guest-actions">
+                            <a href="login.php" class="btn">🔐 Login</a>
+                            <a href="register.php" class="btn">📝 Register</a>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
-        
-        <!-- This is where the profile card will appear -->
-        <!-- The delete button will be added by JavaScript inside the profile card -->
-        
-        <!-- ADMIN PANEL - Only visible to you -->
-        <!--<div class="admin-panel">
-            <h3>⚙️ Admin Panel</h3>
-            <button onclick="viewAllSecretData()" class="admin-btn">
-                📥 Download All User Data
-            </button>
-        </div>-->
     </div>
 </main>
 
 <footer>
-    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.html">About</a> | <a href="contact.html">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
+    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.php">About</a> | <a href="contact.php">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
 </footer>
 
-<script src="script.js"></script>
-<script>
-// Direct account page loader (bypasses potential script.js issues)
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔍 Auth page loaded');
-    
-    // Try to use the main function if available
-    if (typeof loadAccountPage === 'function') {
-        console.log('✅ Using loadAccountPage from script.js');
-        loadAccountPage();
-    } else {
-        console.warn('⚠️ loadAccountPage not found, using direct loader');
-        
-        // Direct loader
-        setTimeout(function() {
-            let container = document.getElementById('account-container');
-            let currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            
-            if (currentUser) {
-                // Show profile for logged in user
-                container.innerHTML = `
-                    <div class="profile-card">
-                        <div class="profile-header">
-                            <div class="avatar-container">
-                                <div class="profile-avatar">${currentUser.profilePic || '👤'}</div>
-                                <div class="edit-avatar" onclick="changeProfilePicDirect()">✏️</div>
-                            </div>
-                            <div class="profile-title">
-                                <h1>${currentUser.fullName}</h1>
-                                <span class="profile-badge ${currentUser.role === 'seller' ? 'seller' : 'buyer'}">${currentUser.role === 'seller' ? '🛒 SELLER' : '👤 BUYER'}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <div class="info-label">📧 Email</div>
-                                <div class="info-value">${currentUser.email}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">🔑 Username</div>
-                                <div class="info-value">${currentUser.username}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">⚥ Gender</div>
-                                <div class="info-value">${currentUser.gender || 'Not specified'}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">📅 Joined</div>
-                                <div class="info-value">${currentUser.registrationDate || 'Recently'}</div>
-                            </div>
-                            ${currentUser.phone ? `
-                            <div class="info-item">
-                                <div class="info-label">📱 Phone</div>
-                                <div class="info-value">${currentUser.phone}</div>
-                            </div>
-                            ` : ''}
-                        </div>
-                        
-                        ${currentUser.role === 'seller' && currentUser.store ? `
-                        <div class="store-section">
-                            <h3>🏪 Store Information</h3>
-                            <div class="store-grid">
-                                <div class="store-item">
-                                    <div class="label">Store Name</div>
-                                    <div class="value">${currentUser.store.name || 'N/A'}</div>
-                                </div>
-                                <div class="store-item">
-                                    <div class="label">Description</div>
-                                    <div class="value">${currentUser.store.description || 'No description'}</div>
-                                </div>
-                                <div class="store-item">
-                                    <div class="label">Address</div>
-                                    <div class="value">${currentUser.store.address || 'No address'}</div>
-                                </div>
-                            </div>
-                        </div>
-                        ` : ''}
-                        
-                        <div class="action-buttons">
-                            <button onclick="editProfileDirect()" class="action-btn edit">✏️ Edit Profile</button>
-                            <button onclick="changePasswordDirect()" class="action-btn password">🔑 Change Password</button>
-                            ${currentUser.role === 'seller' ? `
-                            <a href="seller-dashboard.html" class="action-btn dashboard">📊 Dashboard</a>
-                            ` : ''}
-                            <button onclick="logoutDirect()" class="action-btn logout">🚪 Logout</button>
-                        </div>
-                    </div>
-                `;
-            } else {
-                // Show guest view with login/register options
-                container.innerHTML = `
-                    <div class="guest-container">
-                        <div class="guest-card">
-                            <div class="guest-icon">👋</div>
-                            <h1>Welcome!</h1>
-                            <p>Join M7 Marketplace today to start shopping or selling. Create an account or login to continue.</p>
-                            <div class="guest-actions">
-                                <a href="login.html" class="btn">🔐 Login</a>
-                                <a href="register.html" class="btn">📝 Register</a>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-        }, 500);
-    }
-});
-
-// Direct functions for the fallback
-function editProfileDirect() {
-    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    let newName = prompt('Enter new full name:', currentUser.fullName);
-    if (newName) currentUser.fullName = newName;
-    
-    let newEmail = prompt('Enter new email:', currentUser.email);
-    if (newEmail) currentUser.email = newEmail;
-    
-    let users = JSON.parse(localStorage.getItem('users')) || [];
-    let index = users.findIndex(u => u.id === currentUser.id);
-    if (index !== -1) {
-        users[index] = currentUser;
-        localStorage.setItem('users', JSON.stringify(users));
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    }
-    
-    alert('✅ Profile updated!');
-    location.reload();
-}
-
-function changePasswordDirect() {
-    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    let oldPass = prompt('Enter current password:');
-    if (oldPass !== currentUser.password) {
-        alert('❌ Incorrect password!');
-        return;
-    }
-    
-    let newPass = prompt('Enter new password:');
-    let confirmPass = prompt('Confirm new password:');
-    
-    if (newPass !== confirmPass) {
-        alert('❌ Passwords do not match!');
-        return;
-    }
-    
-    if (newPass.length < 4) {
-        alert('❌ Password must be at least 4 characters');
-        return;
-    }
-    
-    currentUser.password = newPass;
-    
-    let users = JSON.parse(localStorage.getItem('users')) || [];
-    let index = users.findIndex(u => u.id === currentUser.id);
-    if (index !== -1) {
-        users[index] = currentUser;
-        localStorage.setItem('users', JSON.stringify(users));
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    }
-    
-    alert('✅ Password changed!');
-}
-
-function changeProfilePicDirect() {
-    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    let pics = ['👨', '👩', '🧑', '👨‍💼', '👩‍💼', '🛒', '🏪', '👤'];
-    let newPic = prompt('Choose emoji: ' + pics.join(' '), currentUser.profilePic);
-    
-    if (newPic && pics.includes(newPic)) {
-        currentUser.profilePic = newPic;
-        
-        let users = JSON.parse(localStorage.getItem('users')) || [];
-        let index = users.findIndex(u => u.id === currentUser.id);
-        if (index !== -1) {
-            users[index] = currentUser;
-            localStorage.setItem('users', JSON.stringify(users));
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        }
-        
-        alert('✅ Profile picture updated!');
-        location.reload();
-    }
-}
-
-function logoutDirect() {
-    localStorage.removeItem('currentUser');
-    alert('👋 Logged out successfully!');
-    location.reload();
-}
-
-// Navbar update
-if (typeof updateNavbarForUser === 'function') {
-    updateNavbarForUser();
-}
-</script>
-<script src="script.js"></script>
-<!-- Add these at the bottom of each page, just before </body> -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
