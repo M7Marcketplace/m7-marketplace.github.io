@@ -1,3 +1,6 @@
+<?php
+require_once 'config.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -132,22 +135,8 @@
 </head>
 <body>
 
-<header>
-    <div class="logo">
-        <img src="M7shooping.png" alt="M7 Shopping Logo" class="logo-img">
-        <span class="logo-text">M7 Marketplace</span>
-    </div>
-    <nav>
-        <ul>
-            <li><a href="home.html">🏠 Home</a></li>
-            <li><a href="products.html">🛍️ Products</a></li>
-            <li><a href="cart.html">🛒 Cart</a></li>
-            <li><a href="about.html">📖 About</a></li>
-            <li><a href="contact.html" class="active">📞 Contact</a></li>
-            <li><a href="auth.html">👤 Account</a></li>
-        </ul>
-    </nav>
-</header>
+<?php require_once 'config.php'; ?>
+<?php include 'navbar.php'; ?>
 
 <main>
     <!-- HERO SECTION -->
@@ -158,27 +147,39 @@
             Start selling your products or find unique items from independent sellers!
         </p>
         <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-            <a href="products.html" class="btn" style="font-size: 18px; padding: 15px 40px;">🛍️ Start Shopping</a>
-            <a href="register.html?role=seller" class="btn btn-success" style="font-size: 18px; padding: 15px 40px;">📦 Start Selling</a>
+            <a href="products.php" class="btn" style="font-size: 18px; padding: 15px 40px;">🛍️ Start Shopping</a>
+            <a href="register.php?role=seller" class="btn btn-success" style="font-size: 18px; padding: 15px 40px;">📦 Start Selling</a>
         </div>
     </div>
     
-    <!-- STATISTICS - Just Starting -->
+    <!-- STATISTICS - Dynamic from Database -->
+    <?php
+    // Get real statistics from database
+    $stmt = $pdo->query("SELECT COUNT(*) as count FROM users WHERE role='buyer'");
+    $buyers = $stmt->fetch()['count'];
+    
+    $stmt = $pdo->query("SELECT COUNT(*) as count FROM users WHERE role='seller'");
+    $sellers = $stmt->fetch()['count'];
+    
+    $stmt = $pdo->query("SELECT COUNT(*) as count FROM products WHERE is_active=1");
+    $products = $stmt->fetch()['count'];
+    ?>
+    
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 60px 0;">
         <div class="feature-box">
-            <div class="stat-number">0</div>
+            <div class="stat-number"><?php echo $buyers; ?></div>
             <div style="font-size: 16px; opacity: 0.9;">Happy Customers</div>
-            <div style="font-size: 12px; opacity: 0.6;">Be our first!</div>
+            <div style="font-size: 12px; opacity: 0.6;">Growing every day</div>
         </div>
         <div class="feature-box">
-            <div class="stat-number">0</div>
+            <div class="stat-number"><?php echo $sellers; ?></div>
             <div style="font-size: 16px; opacity: 0.9;">Active Sellers</div>
-            <div style="font-size: 12px; opacity: 0.6;">You could be #1!</div>
+            <div style="font-size: 12px; opacity: 0.6;">Join them today!</div>
         </div>
         <div class="feature-box">
-            <div class="stat-number">0</div>
+            <div class="stat-number"><?php echo $products; ?></div>
             <div style="font-size: 16px; opacity: 0.9;">Products Listed</div>
-            <div style="font-size: 12px; opacity: 0.6;">Start adding today</div>
+            <div style="font-size: 12px; opacity: 0.6;">And counting...</div>
         </div>
         <div class="feature-box">
             <div class="stat-number">24/7</div>
@@ -202,7 +203,7 @@
                 <li style="margin-bottom: 10px;">✅ Contact sellers directly</li>
             </ul>
             <div style="text-align: center; margin-top: 30px;">
-                <a href="products.html" class="btn">Browse Products →</a>
+                <a href="products.php" class="btn">Browse Products →</a>
             </div>
         </div>
         
@@ -218,7 +219,7 @@
                 <li style="margin-bottom: 10px;">✅ Manage your store dashboard</li>
             </ul>
             <div style="text-align: center; margin-top: 30px;">
-                <a href="register.html?role=seller" class="btn btn-success">Start Selling Today →</a>
+                <a href="register.php?role=seller" class="btn btn-success">Start Selling Today →</a>
             </div>
         </div>
     </div>
@@ -262,118 +263,117 @@
     <div class="promo-banner">
         <h2 style="font-size: 42px; margin-bottom: 20px; color: white;">🚀 BE THE FIRST SELLER!</h2>
         <p style="font-size: 20px; margin-bottom: 30px; color: white; opacity: 0.9;">Join now and get <strong>0% commission</strong> for your first 3 months!</p>
-        <a href="register.html?role=seller" class="btn" style="background: white; color: #d96565; font-size: 18px; padding: 15px 40px;">Claim Your Spot →</a>
+        <a href="register.php?role=seller" class="btn" style="background: white; color: #d96565; font-size: 18px; padding: 15px 40px;">Claim Your Spot →</a>
     </div>
     
     <!-- CATEGORIES -->
     <h2 style="font-size: 36px; margin: 60px 0 30px; text-align: center;">📦 Popular Categories</h2>
-    <!-- CATEGORIES SECTION - FIXED -->
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 60px;">
-        <div class="category-card" onclick="window.location.href='products.html?category=electronics'">
+        <div class="category-card" onclick="window.location.href='products.php?category=electronics'">
             <div style="font-size: 48px; margin-bottom: 15px;">📱</div>
             <h4>Electronics</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=fashion'">
+        <div class="category-card" onclick="window.location.href='products.php?category=fashion'">
             <div style="font-size: 48px; margin-bottom: 15px;">👕</div>
             <h4>Fashion</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=clothing'">
+        <div class="category-card" onclick="window.location.href='products.php?category=clothing'">
             <div style="font-size: 48px; margin-bottom: 15px;">👕</div>
             <h4>Clothing</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=home'">
+        <div class="category-card" onclick="window.location.href='products.php?category=home'">
             <div style="font-size: 48px; margin-bottom: 15px;">🏠</div>
             <h4>Home</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=garden'">
+        <div class="category-card" onclick="window.location.href='products.php?category=garden'">
             <div style="font-size: 48px; margin-bottom: 15px;">🌱</div>
             <h4>Garden</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=crafts'">
+        <div class="category-card" onclick="window.location.href='products.php?category=crafts'">
             <div style="font-size: 48px; margin-bottom: 15px;">🎨</div>
             <h4>Crafts</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=handmade'">
+        <div class="category-card" onclick="window.location.href='products.php?category=handmade'">
             <div style="font-size: 48px; margin-bottom: 15px;">✂️</div>
             <h4>Handmade</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=sports'">
+        <div class="category-card" onclick="window.location.href='products.php?category=sports'">
             <div style="font-size: 48px; margin-bottom: 15px;">⚽</div>
             <h4>Sports</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=books'">
+        <div class="category-card" onclick="window.location.href='products.php?category=books'">
             <div style="font-size: 48px; margin-bottom: 15px;">📚</div>
             <h4>Books</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=food'">
+        <div class="category-card" onclick="window.location.href='products.php?category=food'">
             <div style="font-size: 48px; margin-bottom: 15px;">🍕</div>
             <h4>Food</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=bakery'">
+        <div class="category-card" onclick="window.location.href='products.php?category=bakery'">
             <div style="font-size: 48px; margin-bottom: 15px;">🥐</div>
             <h4>Bakery</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=desserts'">
+        <div class="category-card" onclick="window.location.href='products.php?category=desserts'">
             <div style="font-size: 48px; margin-bottom: 15px;">🍰</div>
             <h4>Desserts</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=beauty'">
+        <div class="category-card" onclick="window.location.href='products.php?category=beauty'">
             <div style="font-size: 48px; margin-bottom: 15px;">💄</div>
             <h4>Beauty</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=health'">
+        <div class="category-card" onclick="window.location.href='products.php?category=health'">
             <div style="font-size: 48px; margin-bottom: 15px;">💊</div>
             <h4>Health</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=toys'">
+        <div class="category-card" onclick="window.location.href='products.php?category=toys'">
             <div style="font-size: 48px; margin-bottom: 15px;">🧸</div>
             <h4>Toys</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=games'">
+        <div class="category-card" onclick="window.location.href='products.php?category=games'">
             <div style="font-size: 48px; margin-bottom: 15px;">🎮</div>
             <h4>Games</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=automotive'">
+        <div class="category-card" onclick="window.location.href='products.php?category=automotive'">
             <div style="font-size: 48px; margin-bottom: 15px;">🚗</div>
             <h4>Automotive</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=pet'">
+        <div class="category-card" onclick="window.location.href='products.php?category=pet'">
             <div style="font-size: 48px; margin-bottom: 15px;">🐶</div>
             <h4>Pet</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=music'">
+        <div class="category-card" onclick="window.location.href='products.php?category=music'">
             <div style="font-size: 48px; margin-bottom: 15px;">🎵</div>
             <h4>Music</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=art'">
+        <div class="category-card" onclick="window.location.href='products.php?category=art'">
             <div style="font-size: 48px; margin-bottom: 15px;">🖼️</div>
             <h4>Art</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=office'">
+        <div class="category-card" onclick="window.location.href='products.php?category=office'">
             <div style="font-size: 48px; margin-bottom: 15px;">📎</div>
             <h4>Office</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=baby'">
+        <div class="category-card" onclick="window.location.href='products.php?category=baby'">
             <div style="font-size: 48px; margin-bottom: 15px;">👶</div>
             <h4>Baby</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=jewelry'">
+        <div class="category-card" onclick="window.location.href='products.php?category=jewelry'">
             <div style="font-size: 48px; margin-bottom: 15px;">💍</div>
             <h4>Jewelry</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=shoes'">
+        <div class="category-card" onclick="window.location.href='products.php?category=shoes'">
             <div style="font-size: 48px; margin-bottom: 15px;">👟</div>
             <h4>Shoes</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=bags'">
+        <div class="category-card" onclick="window.location.href='products.php?category=bags'">
             <div style="font-size: 48px; margin-bottom: 15px;">👜</div>
             <h4>Bags</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=watches'">
+        <div class="category-card" onclick="window.location.href='products.php?category=watches'">
             <div style="font-size: 48px; margin-bottom: 15px;">⌚</div>
             <h4>Watches</h4>
         </div>
-        <div class="category-card" onclick="window.location.href='products.html?category=other'">
+        <div class="category-card" onclick="window.location.href='products.php?category=other'">
             <div style="font-size: 48px; margin-bottom: 15px;">🔄</div>
             <h4>Other</h4>
         </div>
@@ -405,7 +405,7 @@
             </div>
         </div>
         <div style="text-align: center; margin-top: 40px;">
-            <a href="register.html?role=seller" class="btn btn-success" style="font-size: 18px; padding: 15px 40px;">Become a Seller Now →</a>
+            <a href="register.php?role=seller" class="btn btn-success" style="font-size: 18px; padding: 15px 40px;">Become a Seller Now →</a>
         </div>
     </div>
     
@@ -421,7 +421,7 @@
 </main>
 
 <footer>
-    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.html">About</a> | <a href="contact.html">Contact</a> | <a href="#">Terms of Service</a> | <a href="#">Privacy Policy</a></p>
+    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.php">About</a> | <a href="contact.php">Contact</a> | <a href="#">Terms of Service</a> | <a href="#">Privacy Policy</a></p>
 </footer>
 
 <script src="script.js"></script>
@@ -429,44 +429,12 @@
 function subscribeNewsletter() {
     let email = document.getElementById('newsletter-email').value;
     if (email) {
-        // Use the showNotification function from script.js if available
-        if (typeof showNotification === 'function') {
-            showNotification('✅ Thanks for subscribing!', 'success');
-        } else {
-            alert('✅ Thanks! We\'ll notify you when new products arrive.');
-        }
-        
+        showNotification('✅ Thanks for subscribing!', 'success');
         document.getElementById('newsletter-email').value = '';
-        
-        // Save emails for you
-        let emails = JSON.parse(localStorage.getItem('newsletter_emails')) || [];
-        emails.push({email: email, date: new Date().toLocaleString()});
-        localStorage.setItem('newsletter_emails', JSON.stringify(emails));
     } else {
-        if (typeof showNotification === 'function') {
-            showNotification('❌ Please enter your email address', 'error');
-        } else {
-            alert('❌ Please enter your email address');
-        }
+        showNotification('❌ Please enter your email address', 'error');
     }
 }
-
-// Check login status on page load to update navbar
-document.addEventListener('DOMContentLoaded', function() {
-    // This will be handled by the main script.js
-    // But we can also do a quick check here
-    if (typeof updateNavbarForUser === 'function') {
-        updateNavbarForUser();
-    }
-});
 </script>
-<!-- Add these at the bottom of each page, just before </body> -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
-<script src="script.js"></script>
-
 </body>
 </html>
-
-
-
