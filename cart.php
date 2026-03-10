@@ -1,3 +1,6 @@
+<?php
+require_once 'config.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -356,31 +359,20 @@
 </head>
 <body>
 
-<header>
-    <div class="logo">
-        <img src="M7shooping.png" alt="M7 Shopping Logo" class="logo-img">
-        <span class="logo-text">M7 Marketplace</span>
-    </div>
-    <nav>
-        <ul>
-            <li><a href="home.html">🏠 Home</a></li>
-            <li><a href="products.html">🛍️ Products</a></li>
-            <li><a href="cart.html">🛒 Cart</a></li>
-            <li><a href="about.html">📖 About</a></li>
-            <li><a href="contact.html" class="active">📞 Contact</a></li>
-            <li><a href="auth.html">👤 Account</a></li>
-        </ul>
-    </nav>
-</header>
+<?php
+require_once 'config.php';
+?>
+
+<?php include 'navbar.php'; ?>
 
 <main>
     <div style="max-width: 1200px; margin: 0 auto;">
-        <h1>🛒 Your Shopping Cart</h1>
+        <h1 class="text-center">🛒 Your Shopping Cart</h1>
         
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 40px;">
             <!-- Cart Items -->
             <div id="cart-items-container">
-                <!-- Cart items will be loaded here -->
+                <!-- Cart items will be loaded by JavaScript -->
             </div>
             
             <!-- Order Summary -->
@@ -388,7 +380,7 @@
                 <div class="summary-card" id="order-summary">
                     <h2>Order Summary</h2>
                     <div id="summary-details">
-                        <!-- Summary will be loaded here -->
+                        <!-- Summary will be loaded by JavaScript -->
                     </div>
                 </div>
             </div>
@@ -397,30 +389,15 @@
 </main>
 
 <footer>
-    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.html">About</a> | <a href="contact.html">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
+    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.php">About</a> | <a href="contact.php">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
 </footer>
 
 <script src="script.js"></script>
 <script>
-    // Additional check for navbar update on page load
+    // Initialize cart display
     document.addEventListener('DOMContentLoaded', function() {
-        if (typeof updateNavbarForUser === 'function') {
-            updateNavbarForUser();
-        }
-        
-        // The cart display will be handled by script.js
-        // This is just a fallback in case the main script doesn't load
-        setTimeout(function() {
-            if (typeof displayCart !== 'function') {
-                console.error('Cart display function not found');
-            }
-        }, 500);
+        displayCart();
     });
 </script>
-<script src="script.js"></script>
-<!-- Add these at the bottom of each page, just before </body> -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
-<script src="script.js"></script>
 </body>
 </html>
