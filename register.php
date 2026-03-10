@@ -1,3 +1,6 @@
+<?php
+require_once 'config.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -117,78 +120,6 @@
         
         .role-card.selected h3 {
             color: #4CAF50;
-        }
-        
-        /* Profile Picture Upload */
-        .profile-upload {
-            text-align: center;
-            margin-bottom: 30px;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .profile-upload-label {
-            display: inline-block;
-            cursor: pointer;
-            position: relative;
-        }
-        
-        .profile-preview {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 4px solid #4CAF50;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-            color: #fff;
-            margin: 0 auto 15px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .profile-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .profile-preview:hover {
-            transform: scale(1.05);
-            border-color: #d96565;
-            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
-        }
-        
-        .upload-icon {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 3px solid white;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-        
-        .upload-icon:hover {
-            transform: rotate(360deg) scale(1.1);
-        }
-        
-        #profile-image-input {
-            display: none;
-        }
-        
-        .upload-hint {
-            font-size: 14px;
-            opacity: 0.7;
-            margin-top: 5px;
         }
         
         /* Form Styles */
@@ -442,22 +373,86 @@
 </head>
 <body>
 
-<header>
-    <div class="logo">
-        <img src="M7shooping.png" alt="M7 Shopping Logo" class="logo-img">
-        <span class="logo-text">M7 Marketplace</span>
-    </div>
-    <nav>
-        <ul>
-            <li><a href="home.html">🏠 Home</a></li>
-            <li><a href="products.html">🛍️ Products</a></li>
-            <li><a href="cart.html">🛒 Cart</a></li>
-            <li><a href="about.html">📖 About</a></li>
-            <li><a href="contact.html" class="active">📞 Contact</a></li>
-            <li><a href="auth.html">👤 Account</a></li>
-        </ul>
-    </nav>
-</header>
+<?php
+require_once 'config.php';
+
+$error = '';
+$success = '';
+
+// Check if already logged in
+if (isLoggedIn()) {
+    header('Location: home.php');
+    exit;
+}
+
+// Process registration form
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $fullName = $_POST['fullName'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+    $confirmPassword = $_POST['confirmPassword'] ?? '';
+    $role = $_POST['role'] ?? 'buyer';
+    $phone = $_POST['phone'] ?? '';
+    $gender = $_POST['gender'] ?? '';
+    $dob = $_POST['dob'] ?? '';
+    
+    // Validate
+    if (empty($fullName) || empty($email) || empty($username) || empty($password) || empty($confirmPassword)) {
+        $error = 'All fields are required';
+    } elseif ($password !== $confirmPassword) {
+        $error = 'Passwords do not match';
+    } elseif (strlen($password) < 4) {
+        $error = 'Password must be at least 4 characters';
+    } else {
+        // Check if email exists
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        if ($stmt->fetch()) {
+            $error = 'Email already exists';
+        } else {
+            // Check if username exists
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
+            $stmt->execute([$username]);
+            if ($stmt->fetch()) {
+                $error = 'Username already taken';
+            } else {
+                // Hash password
+                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+                
+                // Insert user
+                $stmt = $pdo->prepare("
+                    INSERT INTO users (full_name, email, username, password, role, phone, gender, date_of_birth, registration_date) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                ");
+                
+                if ($stmt->execute([$fullName, $email, $username, $hashedPassword, $role, $phone, $gender, $dob])) {
+                    $userId = $pdo->lastInsertId();
+                    
+                    // If seller, create store
+                    if ($role === 'seller') {
+                        $storeName = $_POST['storeName'] ?? $fullName . "'s Store";
+                        $storeDesc = $_POST['storeDescription'] ?? '';
+                        $storeAddress = $_POST['businessAddress'] ?? '';
+                        
+                        $stmt = $pdo->prepare("
+                            INSERT INTO seller_stores (seller_id, store_name, store_description, business_address) 
+                            VALUES (?, ?, ?, ?)
+                        ");
+                        $stmt->execute([$userId, $storeName, $storeDesc, $storeAddress]);
+                    }
+                    
+                    $success = 'Registration successful! You can now login.';
+                } else {
+                    $error = 'Registration failed';
+                }
+            }
+        }
+    }
+}
+?>
+
+<?php include 'navbar.php'; ?>
 
 <main>
     <div class="register-wrapper">
@@ -467,7 +462,20 @@
                 <p>Join M7 Marketplace today!</p>
             </div>
             
-            <div id="message-container"></div>
+            <div id="message-container">
+                <?php if ($error): ?>
+                    <div class="error-message"><?php echo $error; ?></div>
+                <?php endif; ?>
+                
+                <?php if ($success): ?>
+                    <div class="success-message"><?php echo $success; ?></div>
+                    <script>
+                        setTimeout(function() {
+                            window.location.href = 'login.php';
+                        }, 3000);
+                    </script>
+                <?php endif; ?>
+            </div>
             
             <!-- Role Selection -->
             <div class="role-selector">
@@ -483,21 +491,8 @@
                 </div>
             </div>
             
-            <!-- Profile Picture Upload -->
-            <div class="profile-upload">
-                <label for="profile-image-input" class="profile-upload-label">
-                    <div class="profile-preview" id="profile-preview">
-                        <span id="preview-emoji">👤</span>
-                    </div>
-                    <div class="upload-icon">📸</div>
-                </label>
-                <input type="file" id="profile-image-input" accept="image/*" onchange="previewProfileImage(this)">
-                <p class="upload-hint">Click to upload a profile picture (optional)</p>
-            </div>
-            
-            <form id="register-form">
+            <form method="POST" action="">
                 <input type="hidden" id="role" name="role" value="buyer">
-                <input type="hidden" id="profile-image-data" name="profileImage">
                 
                 <!-- Personal Information -->
                 <div class="form-section">
@@ -505,38 +500,38 @@
                     
                     <div class="form-group">
                         <label>Full Name *</label>
-                        <input type="text" id="fullName" placeholder="Enter your full name" required>
+                        <input type="text" name="fullName" placeholder="Enter your full name" required>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label>Email *</label>
-                            <input type="email" id="email" placeholder="your@email.com" required>
+                            <input type="email" name="email" placeholder="your@email.com" required>
                         </div>
                         <div class="form-group">
                             <label>Username *</label>
-                            <input type="text" id="username" placeholder="Choose username" required>
+                            <input type="text" name="username" placeholder="Choose username" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label>Password *</label>
-                            <input type="password" id="password" placeholder="••••••••" required onkeyup="checkPasswordStrength()">
+                            <input type="password" name="password" id="password" placeholder="••••••••" required onkeyup="checkPasswordStrength()">
                             <div class="password-strength">
                                 <div class="strength-bar" id="strength-bar"></div>
                             </div>
                         </div>
                         <div class="form-group">
                             <label>Confirm Password *</label>
-                            <input type="password" id="confirmPassword" placeholder="••••••••" required>
+                            <input type="password" name="confirmPassword" placeholder="••••••••" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label>Gender</label>
-                            <select id="gender">
+                            <select name="gender">
                                 <option value="male">👨 Male</option>
                                 <option value="female">👩 Female</option>
                                 <option value="other">🧑 Other</option>
@@ -544,33 +539,33 @@
                         </div>
                         <div class="form-group">
                             <label>Date of Birth</label>
-                            <input type="date" id="dob">
+                            <input type="date" name="dob">
                         </div>
                     </div>
                     
                     <div class="form-group">
                         <label>Phone Number</label>
-                        <input type="tel" id="phone" placeholder="+213 XXX XXX XXX">
+                        <input type="tel" name="phone" placeholder="+213 XXX XXX XXX">
                     </div>
                 </div>
                 
                 <!-- Seller Fields -->
-                <div class="seller-fields" id="seller-fields">
+                <div class="seller-fields" id="seller-fields" style="display: none;">
                     <h3>🏪 Store Information</h3>
                     
                     <div class="form-group">
                         <label>Store Name *</label>
-                        <input type="text" id="storeName" placeholder="Your store name">
+                        <input type="text" name="storeName" placeholder="Your store name">
                     </div>
                     
                     <div class="form-group">
                         <label>Store Description</label>
-                        <textarea id="storeDescription" rows="3" placeholder="Describe your store..."></textarea>
+                        <textarea name="storeDescription" rows="3" placeholder="Describe your store..."></textarea>
                     </div>
                     
                     <div class="form-group">
                         <label>Business Address</label>
-                        <input type="text" id="businessAddress" placeholder="Your business address">
+                        <input type="text" name="businessAddress" placeholder="Your business address">
                     </div>
                 </div>
                 
@@ -583,7 +578,7 @@
                 <button type="submit" class="register-btn">Create Account</button>
                 
                 <div class="login-link">
-                    Already have an account? <a href="login.html">Login here</a>
+                    Already have an account? <a href="login.php">Login here</a>
                 </div>
             </form>
         </div>
@@ -591,7 +586,7 @@
 </main>
 
 <footer>
-    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.html">About</a> | <a href="contact.html">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
+    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.php">About</a> | <a href="contact.php">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
 </footer>
 
 <script src="script.js"></script>
@@ -637,192 +632,8 @@ function checkPasswordStrength() {
     }
 }
 
-// Profile image preview
-function previewProfileImage(input) {
-    const preview = document.getElementById('profile-preview');
-    const previewEmoji = document.getElementById('preview-emoji');
-    const hiddenInput = document.getElementById('profile-image-data');
-    
-    if (input.files && input.files[0]) {
-        // Check file size (max 2MB)
-        if (input.files[0].size > 2 * 1024 * 1024) {
-            showMessage('❌ Image too large. Max 2MB', 'error');
-            input.value = '';
-            return;
-        }
-        
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            // Create image element for preview
-            const img = document.createElement('img');
-            img.src = e.target.result;
-            img.onload = function() {
-                // Compress image
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                // Set max dimensions
-                let width = this.width;
-                let height = this.height;
-                const maxSize = 200;
-                
-                if (width > height) {
-                    if (width > maxSize) {
-                        height *= maxSize / width;
-                        width = maxSize;
-                    }
-                } else {
-                    if (height > maxSize) {
-                        width *= maxSize / height;
-                        height = maxSize;
-                    }
-                }
-                
-                canvas.width = width;
-                canvas.height = height;
-                ctx.drawImage(this, 0, 0, width, height);
-                
-                // Get compressed image
-                const compressedImage = canvas.toDataURL('image/jpeg', 0.7);
-                
-                // Update preview
-                preview.innerHTML = `<img src="${compressedImage}" alt="Profile">`;
-                hiddenInput.value = compressedImage;
-            };
-        };
-        
-        reader.readAsDataURL(input.files[0]);
-    } else {
-        // Reset to default
-        preview.innerHTML = '<span id="preview-emoji">👤</span>';
-        hiddenInput.value = '';
-    }
-}
-
-// Show message function
-function showMessage(message, type) {
-    const container = document.getElementById('message-container');
-    if (container) {
-        container.innerHTML = `<div class="${type === 'error' ? 'error-message' : 'success-message'}">${message}</div>`;
-        setTimeout(() => {
-            container.innerHTML = '';
-        }, 3000);
-    }
-}
-
-// Handle form submission
-document.getElementById('register-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    // Get form values
-    const fullName = document.getElementById('fullName').value;
-    const email = document.getElementById('email').value;
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    const terms = document.getElementById('terms').checked;
-    const role = document.getElementById('role').value;
-    
-    // Validation
-    if (!fullName || !email || !username || !password || !confirmPassword) {
-        showMessage('❌ Please fill all required fields', 'error');
-        return;
-    }
-    
-    if (password !== confirmPassword) {
-        showMessage('❌ Passwords do not match', 'error');
-        return;
-    }
-    
-    if (password.length < 4) {
-        showMessage('❌ Password must be at least 4 characters', 'error');
-        return;
-    }
-    
-    if (!terms) {
-        showMessage('❌ Please agree to Terms and Conditions', 'error');
-        return;
-    }
-    
-    // Get users from localStorage
-    let users = JSON.parse(localStorage.getItem('users')) || [];
-    
-    // Check if email exists
-    if (users.some(u => u.email === email)) {
-        showMessage('❌ Email already exists', 'error');
-        return;
-    }
-    
-    // Check if username exists
-    if (users.some(u => u.username === username)) {
-        showMessage('❌ Username already taken', 'error');
-        return;
-    }
-    
-    // Create user object
-    const profileImage = document.getElementById('profile-image-data').value;
-    
-    let newUser = {
-        id: Date.now(),
-        fullName,
-        email,
-        username,
-        password,
-        gender: document.getElementById('gender').value,
-        profilePic: profileImage || '👤', // Use uploaded image or default emoji
-        role,
-        dob: document.getElementById('dob').value || '',
-        phone: document.getElementById('phone').value || '',
-        registrationDate: new Date().toLocaleString()
-    };
-    
-    // Add seller info if role is seller
-    if (role === 'seller') {
-        const storeName = document.getElementById('storeName').value;
-        if (!storeName) {
-            showMessage('❌ Store name is required for sellers', 'error');
-            return;
-        }
-        
-        newUser.store = {
-            name: storeName,
-            description: document.getElementById('storeDescription').value || '',
-            address: document.getElementById('businessAddress').value || ''
-        };
-    }
-    
-    // Save user
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    // Auto login
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
-    
-    showMessage('✅ Registration successful! Redirecting...', 'success');
-    
-    // Redirect based on role
-    setTimeout(() => {
-        if (role === 'seller') {
-            window.location.href = 'seller-dashboard.html';
-        } else {
-            window.location.href = 'home.html';
-        }
-    }, 1500);
-});
-
 // Select buyer by default
 selectRole('buyer');
-
-// Update navbar
-if (typeof updateNavbarForUser === 'function') {
-    updateNavbarForUser();
-}
 </script>
-<script src="script.js"></script>
-<!-- Add these at the bottom of each page, just before </body> -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
-<script src="script.js"></script>
 </body>
 </html>
