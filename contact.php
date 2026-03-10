@@ -1,4 +1,7 @@
-<!DOCTYPE html>
+<?php
+require_once 'config.php';
+?>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -266,22 +269,54 @@
 </head>
 <body>
 
-<header>
-    <div class="logo">
-        <img src="M7shooping.png" alt="M7 Shopping Logo" class="logo-img">
-        <span class="logo-text">M7 Marketplace</span>
-    </div>
-    <nav>
-        <ul>
-            <li><a href="home.html">🏠 Home</a></li>
-            <li><a href="products.html">🛍️ Products</a></li>
-            <li><a href="cart.html">🛒 Cart</a></li>
-            <li><a href="about.html">📖 About</a></li>
-            <li><a href="contact.html" class="active">📞 Contact</a></li>
-            <li><a href="auth.html">👤 Account</a></li>
-        </ul>
-    </nav>
-</header>
+<?php
+require_once 'config.php';
+
+$success = '';
+$error = '';
+
+// Handle contact form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = $_POST['name'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $phone = $_POST['phone'] ?? '';
+    $subject = $_POST['subject'] ?? '';
+    $message = $_POST['message'] ?? '';
+    
+    if (empty($name) || empty($email) || empty($subject) || empty($message)) {
+        $error = 'Please fill all required fields';
+    } else {
+        // Save to database
+        $stmt = $pdo->prepare("
+            INSERT INTO contact_messages (name, email, phone, subject, message, created_at)
+            VALUES (?, ?, ?, ?, ?, NOW())
+        ");
+        
+        if ($stmt->execute([$name, $email, $phone, $subject, $message])) {
+            // Create email content
+            $body = "
+Name: $name
+Email: $email
+Phone: " . ($phone ?: 'Not provided') . "
+Subject: $subject
+
+Message:
+$message
+            ";
+            
+            // Create mailto link
+            $mailtoLink = "mailto:m7.contact.us@gmail.com?subject=" . urlencode($subject) . "&body=" . urlencode($body);
+            
+            // Show success message with link
+            $success = true;
+        } else {
+            $error = 'Failed to send message. Please try again.';
+        }
+    }
+}
+?>
+
+<?php include 'navbar.php'; ?>
 
 <main>
     <div class="page-header">
@@ -289,7 +324,26 @@
         <p>Have questions? Send us a message and we'll get back to you!</p>
     </div>
     
-    <div id="message-status"></div>
+    <div id="message-status">
+        <?php if ($success): ?>
+            <div class="success-message">
+                <h3>✅ Message saved! Your email client is opening...</h3>
+                <p>Just click send in your email app to complete.</p>
+                <script>
+                    // Automatically open email client after 1 second
+                    setTimeout(function() {
+                        window.location.href = "<?php echo $mailtoLink; ?>";
+                    }, 1000);
+                </script>
+            </div>
+        <?php endif; ?>
+        
+        <?php if ($error): ?>
+            <div class="error-message">
+                <h3>❌ <?php echo $error; ?></h3>
+            </div>
+        <?php endif; ?>
+    </div>
     
     <div class="contact-grid">
         <!-- Contact Information -->
@@ -329,30 +383,29 @@
             </div>
         </div>
         
-        <!-- Contact Form - SIMPLE MAILTO (WORKS 100%) -->
+        <!-- Contact Form -->
         <div class="contact-form">
             <h2>Send us a Message</h2>
             
-            <form id="contactForm" onsubmit="sendByEmail(); return false;">
+            <form method="POST" action="">
                 <div class="form-group">
                     <label>Your Full Name *</label>
-                    <input type="text" id="name" placeholder="Enter your full name" required>
+                    <input type="text" name="name" placeholder="Enter your full name" required>
                 </div>
                 
                 <div class="form-group">
                     <label>Your Email Address *</label>
-                    <input type="email" id="email" placeholder="you@example.com" required>
+                    <input type="email" name="email" placeholder="you@example.com" required>
                 </div>
                 
                 <div class="form-group">
                     <label>Phone Number</label>
-                    <input type="tel" id="phone" placeholder="+213 XXX XXX XXX">
+                    <input type="tel" name="phone" placeholder="+213 XXX XXX XXX">
                 </div>
                 
-                <!-- SUBJECT DROPDOWN -->
                 <div class="form-group">
                     <label>Subject *</label>
-                    <select id="subject" required>
+                    <select name="subject" required>
                         <option value="">-- Select a subject --</option>
                         <option value="General Question">📋 General Question</option>
                         <option value="Technical Support">🛠️ Technical Support</option>
@@ -365,78 +418,23 @@
                 
                 <div class="form-group">
                     <label>Your Message *</label>
-                    <textarea id="message" rows="5" placeholder="Write your message..." required></textarea>
+                    <textarea name="message" rows="5" placeholder="Write your message..." required></textarea>
                 </div>
                 
                 <button type="submit" class="submit-btn">📨 Send Message</button>
             </form>
             
             <p style="text-align: center; margin-top: 20px; font-size: 14px; background: rgba(76, 175, 80, 0.2); padding: 10px; border-radius: 10px;">
-                📧 This will open your email app. The email will come directly from YOU!
+                📧 This will open your email app. The message is also saved in our database!
             </p>
         </div>
     </div>
 </main>
 
 <footer>
-    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.html">About</a> | <a href="contact.html">Contact</a></p>
+    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.php">About</a> | <a href="contact.php">Contact</a></p>
 </footer>
 
-<script>
-    function sendByEmail() {
-        // Get form values
-        const name = document.getElementById('name').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const phone = document.getElementById('phone').value.trim();
-        const subject = document.getElementById('subject').value;
-        const message = document.getElementById('message').value.trim();
-        // Create mailto link
-        // Create mailto link
-        
-        // Validate
-        if (!name || !email || !subject || !message) {
-            alert('Please fill all required fields');
-            return;
-        }
-        
-        // Create email content
-        const body = `
-Name: ${name}
-Email: ${email}
-Phone: ${phone || 'Not provided'}
-Subject: ${subject}
-
-Message:
-${message}
-        `;
-        
-        // Create mailto link
-        const mailtoLink = `mailto:m7.contact.us@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        
-        // Open default email client
-        window.location.href = mailtoLink;
-        
-        // Show success message
-        document.getElementById('message-status').innerHTML = `
-            <div class="success-message">
-                <h3>✅ Your email client has been opened!</h3>
-                <p>Just click send in your email app.</p>
-            </div>
-        `;
-    }
-    
-    // Update navbar if function exists
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof updateNavbarForUser === 'function') {
-            updateNavbarForUser();
-        }
-    });
-</script>
 <script src="script.js"></script>
-<!-- Add these at the bottom of each page, just before </body> -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
-<script src="script.js"></script>
-
 </body>
 </html>
