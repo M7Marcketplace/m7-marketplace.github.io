@@ -1,3 +1,6 @@
+<?php
+require_once 'config.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -457,22 +460,21 @@
 </head>
 <body>
 
-<header>
-    <div class="logo">
-        <img src="M7shooping.png" alt="M7 Shopping Logo" class="logo-img">
-        <span class="logo-text">M7 Marketplace</span>
-    </div>
-    <nav>
-        <ul>
-            <li><a href="home.html">🏠 Home</a></li>
-            <li><a href="products.html">🛍️ Products</a></li>
-            <li><a href="cart.html">🛒 Cart</a></li>
-            <li><a href="about.html">📖 About</a></li>
-            <li><a href="contact.html" class="active">📞 Contact</a></li>
-            <li><a href="auth.html">👤 Account</a></li>
-        </ul>
-    </nav>
-</header>
+<?php
+require_once 'config.php';
+
+// Get real statistics from database
+$stmt = $pdo->query("SELECT COUNT(*) as count FROM users WHERE role='seller'");
+$sellers = $stmt->fetch()['count'];
+
+$stmt = $pdo->query("SELECT COUNT(*) as count FROM products WHERE is_active=1");
+$products = $stmt->fetch()['count'];
+
+$stmt = $pdo->query("SELECT COUNT(*) as count FROM users WHERE role='buyer'");
+$buyers = $stmt->fetch()['count'];
+?>
+
+<?php include 'navbar.php'; ?>
 
 <main>
     <div class="about-section">
@@ -487,17 +489,17 @@
         <!-- Stats -->
         <div class="stats-container">
             <div class="stat-box">
-                <div class="stat-number">0</div>
+                <div class="stat-number"><?php echo $sellers; ?></div>
                 <p>Active Sellers</p>
-                <small>Be the first!</small>
+                <small>Growing every day</small>
             </div>
             <div class="stat-box">
-                <div class="stat-number">0</div>
+                <div class="stat-number"><?php echo $products; ?></div>
                 <p>Products Listed</p>
-                <small>Start adding</small>
+                <small>And counting...</small>
             </div>
             <div class="stat-box">
-                <div class="stat-number">5%</div>
+                <div class="stat-number">10%</div>
                 <p>Commission</p>
                 <small>Lowest in market</small>
             </div>
@@ -525,7 +527,7 @@
                     <li>Leave reviews and ratings</li>
                 </ul>
                 <div style="text-align: center; margin-top: 30px;">
-                    <a href="products.html" class="btn">Browse Products →</a>
+                    <a href="products.php" class="btn">Browse Products →</a>
                 </div>
             </div>
             
@@ -542,7 +544,7 @@
                     <li>Manage your store easily</li>
                 </ul>
                 <div style="text-align: center; margin-top: 30px;">
-                    <a href="register.html?role=seller" class="btn btn-success">Start Selling →</a>
+                    <a href="register.php?role=seller" class="btn btn-success">Start Selling →</a>
                 </div>
             </div>
         </div>
@@ -583,7 +585,7 @@
         <div class="feature-grid">
             <div class="feature-card">
                 <div class="feature-icon">💰</div>
-                <h3>5% Commission</h3>
+                <h3>10% Commission</h3>
                 <p>One of the lowest rates in Algeria. Keep 90% of your sales!</p>
             </div>
             <div class="feature-card">
@@ -618,30 +620,17 @@
             <h2>Ready to Start?</h2>
             <p>Join M7 Marketplace today - whether you want to buy or sell!</p>
             <div class="cta-buttons">
-                <a href="register.html?role=buyer" class="btn btn-light">🛍️ Shop Now</a>
-                <a href="register.html?role=seller" class="btn btn-success">📦 Start Selling</a>
+                <a href="register.php?role=buyer" class="btn btn-light">🛍️ Shop Now</a>
+                <a href="register.php?role=seller" class="btn btn-success">📦 Start Selling</a>
             </div>
         </div>
     </div>
 </main>
 
 <footer>
-    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.html">About</a> | <a href="contact.html">Contact</a> | <a href="#">Terms of Service</a> | <a href="#">Privacy Policy</a></p>
+    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.php">About</a> | <a href="contact.php">Contact</a> | <a href="#">Terms of Service</a> | <a href="#">Privacy Policy</a></p>
 </footer>
 
-<script src="script.js"></script>
-<script>
-    // Additional check for navbar update on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof updateNavbarForUser === 'function') {
-            updateNavbarForUser();
-        }
-    });
-</script>
-<script src="script.js"></script>
-<!-- Add these at the bottom of each page, just before </body> -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
