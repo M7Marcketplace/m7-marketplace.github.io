@@ -1,3 +1,6 @@
+<?php
+require_once 'config.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,7 +35,6 @@
             opacity: 0.8;
         }
         
-        /* Role Indicator */
         .role-indicator {
             display: inline-block;
             padding: 8px 20px;
@@ -54,7 +56,6 @@
             border-color: #4CAF50;
         }
         
-        /* Stat Cards */
         .stat-cards {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -107,7 +108,6 @@
             margin-top: 5px;
         }
         
-        /* Filter Section */
         .filter-section {
             display: flex;
             gap: 10px;
@@ -137,7 +137,6 @@
             border-color: transparent;
         }
         
-        /* Orders List */
         .orders-list {
             display: flex;
             flex-direction: column;
@@ -234,7 +233,6 @@
             border: 1px solid #d96565;
         }
         
-        /* Customer Info */
         .customer-info {
             background: rgba(0, 0, 0, 0.2);
             border-radius: 15px;
@@ -272,7 +270,6 @@
             font-weight: 600;
         }
         
-        /* Order Items */
         .order-items {
             margin: 20px 0;
         }
@@ -334,7 +331,6 @@
             font-size: 16px;
         }
         
-        /* Order Footer */
         .order-footer {
             display: flex;
             justify-content: space-between;
@@ -385,7 +381,6 @@
             color: white;
         }
         
-        /* Empty State */
         .empty-orders {
             text-align: center;
             padding: 80px 20px;
@@ -437,7 +432,6 @@
             box-shadow: 0 15px 35px rgba(76, 175, 80, 0.4);
         }
         
-        /* Loading State */
         .loading-state {
             text-align: center;
             padding: 80px;
@@ -458,7 +452,6 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Responsive */
         @media (max-width: 1024px) {
             .stat-cards {
                 grid-template-columns: repeat(2, 1fr);
@@ -496,349 +489,248 @@
 </head>
 <body>
 
-<header>
-    <div class="logo">
-        <img src="M7shooping.png" alt="M7 Shopping" class="logo-img">
-        <span class="logo-text">M7 Marketplace</span>
-    </div>
-    <nav>
-        <ul>
-            <li><a href="home.html">🏠 Home</a></li>
-            <li><a href="products.html">🛍️ Products</a></li>
-            <li><a href="cart.html">🛒 Cart</a></li>
-            <li><a href="about.html">📖 About</a></li>
-            <li><a href="contact.html" class="active">📞 Contact</a></li>
-            <li><a href="seller-dashboard.html" class="active">📊 Dashboard</a></li>
-            <li><a href="auth.html">👤 Account</a></li>
-        </ul>
-    </nav>
-</header>
+<?php
+require_once 'config.php';
+
+// Check if user is logged in
+if (!isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
+$currentUser = getCurrentUser();
+$isSeller = ($currentUser['role'] === 'seller');
+
+// Get orders based on user role
+if ($isSeller) {
+    // Sellers see orders containing their products
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT o.*, 
+               u.full_name as buyer_name, u.phone as buyer_phone, u.email as buyer_email
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        LEFT JOIN users u ON o.buyer_id = u.id
+        WHERE oi.seller_id = ?
+        ORDER BY o.created_at DESC
+    ");
+    $stmt->execute([$currentUser['id']]);
+} else {
+    // Buyers see their own orders
+    $stmt = $pdo->prepare("
+        SELECT o.*, u.full_name as buyer_name, u.phone as buyer_phone, u.email as buyer_email
+        FROM orders o
+        LEFT JOIN users u ON o.buyer_id = u.id
+        WHERE o.buyer_id = ?
+        ORDER BY o.created_at DESC
+    ");
+    $stmt->execute([$currentUser['id']]);
+}
+$orders = $stmt->fetchAll();
+
+// Get order items for each order
+foreach ($orders as &$order) {
+    $stmt = $pdo->prepare("
+        SELECT oi.*, p.image_url, p.seller_id, u.full_name as seller_name
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id
+        LEFT JOIN users u ON oi.seller_id = u.id
+        WHERE oi.order_id = ?
+    ");
+    $stmt->execute([$order['id']]);
+    $order['items'] = $stmt->fetchAll();
+}
+
+// Calculate statistics
+$totalOrders = count($orders);
+$totalSpent = 0;
+$totalItems = 0;
+$pendingOrders = 0;
+
+foreach ($orders as $order) {
+    if ($isSeller) {
+        // For sellers, only count their items
+        foreach ($order['items'] as $item) {
+            if ($item['seller_id'] == $currentUser['id']) {
+                $totalSpent += $item['product_price'] * $item['quantity'];
+                $totalItems += $item['quantity'];
+            }
+        }
+    } else {
+        $totalSpent += $order['total'];
+        $totalItems += array_sum(array_column($order['items'], 'quantity'));
+    }
+    
+    if ($order['status'] === 'pending') {
+        $pendingOrders++;
+    }
+}
+?>
+
+<?php include 'navbar.php'; ?>
 
 <main>
     <div class="orders-wrapper">
         <div id="orders-container">
-            <!-- Orders will be loaded here by JavaScript -->
-            <div class="loading-state">
-                <div class="loading-spinner"></div>
-                <p>Loading your orders...</p>
-            </div>
-        </div>
-    </div>
-</main>
-
-<footer>
-    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.html">About</a> | <a href="contact.html">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
-</footer>
-
-<script src="script.js"></script>
-<script>
-// Direct orders loader
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔍 Orders page loaded');
-    
-    // Update navbar
-    if (typeof updateNavbarForUser === 'function') {
-        updateNavbarForUser();
-    }
-    
-    // Load orders
-    setTimeout(loadOrdersDirect, 500);
-});
-
-function loadOrdersDirect() {
-    const container = document.getElementById('orders-container');
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    
-    if (!currentUser) {
-        container.innerHTML = `
-            <div class="empty-orders">
-                <div class="empty-orders-icon">🔒</div>
-                <h2>Please Login</h2>
-                <p>You need to login to view your orders.</p>
-                <a href="login.html" class="shop-now-btn">Login</a>
-            </div>
-        `;
-        return;
-    }
-    
-    // Get all orders
-    const allOrders = JSON.parse(localStorage.getItem('orders')) || [];
-    
-    // Filter orders based on user role
-    let userOrders;
-    let roleText;
-    let roleClass;
-    
-    if (currentUser.role === 'seller') {
-        // Sellers see orders that contain their products
-        userOrders = allOrders.filter(order => 
-            order.items.some(item => item.sellerId === currentUser.id)
-        );
-        roleText = 'Seller View';
-        roleClass = 'seller';
-    } else {
-        // Buyers see orders they placed
-        userOrders = allOrders.filter(order => 
-            order.customer && order.customer.email === currentUser.email
-        );
-        roleText = 'Buyer View';
-        roleClass = 'buyer';
-    }
-    
-    // Calculate statistics
-    const totalOrders = userOrders.length;
-    const totalSpent = userOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-    const totalItems = userOrders.reduce((sum, order) => {
-        return sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
-    }, 0);
-    const pendingOrders = userOrders.filter(o => o.status === 'pending').length;
-    
-    if (userOrders.length === 0) {
-        container.innerHTML = `
+            
+            <?php if (empty($orders)): ?>
             <div class="empty-orders">
                 <div class="empty-orders-icon">📦</div>
                 <h2>No Orders Yet</h2>
-                <p>${currentUser.role === 'seller' ? 
-                    'When customers buy your products, they will appear here.' : 
-                    'Start shopping to place your first order!'}</p>
-                <a href="${currentUser.role === 'seller' ? 'seller-add-product.html' : 'products.html'}" class="shop-now-btn">
-                    ${currentUser.role === 'seller' ? 'Add Products' : 'Start Shopping'}
+                <p><?php echo $isSeller ? 'When customers buy your products, they will appear here.' : 'Start shopping to place your first order!'; ?></p>
+                <a href="<?php echo $isSeller ? 'seller-add-product.php' : 'products.php'; ?>" class="shop-now-btn">
+                    <?php echo $isSeller ? 'Add Products' : 'Start Shopping'; ?>
                 </a>
             </div>
-        `;
-        return;
-    }
-    
-    // Statistics HTML
-    let statsHTML = `
-        <div class="stat-cards">
-            <div class="stat-card">
-                <div class="stat-icon">📦</div>
-                <div class="stat-label">Total Orders</div>
-                <div class="stat-value">${totalOrders}</div>
+            <?php else: ?>
+            
+            <div class="page-header">
+                <h1>📋 <?php echo $isSeller ? 'Seller Orders' : 'My Orders'; ?></h1>
+                <span class="role-indicator <?php echo $isSeller ? 'seller' : 'buyer'; ?>">
+                    <?php echo $isSeller ? '🛒 SELLER VIEW' : '👤 BUYER VIEW'; ?>
+                </span>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">💰</div>
-                <div class="stat-label">Total ${currentUser.role === 'seller' ? 'Revenue' : 'Spent'}</div>
-                <div class="stat-value">${totalSpent.toLocaleString()} DZD</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">📊</div>
-                <div class="stat-label">Items Purchased</div>
-                <div class="stat-value">${totalItems}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">⏳</div>
-                <div class="stat-label">Pending</div>
-                <div class="stat-value">${pendingOrders}</div>
-                <div class="stat-small">awaiting processing</div>
-            </div>
-        </div>
-    `;
-    
-    // Filter buttons
-    let filterHTML = `
-        <div class="filter-section">
-            <span class="filter-btn active" onclick="filterOrdersDirect('all')">All Orders</span>
-            <span class="filter-btn" onclick="filterOrdersDirect('pending')">Pending</span>
-            <span class="filter-btn" onclick="filterOrdersDirect('processing')">Processing</span>
-            <span class="filter-btn" onclick="filterOrdersDirect('shipped')">Shipped</span>
-            <span class="filter-btn" onclick="filterOrdersDirect('delivered')">Delivered</span>
-        </div>
-    `;
-    
-    // Orders HTML
-    let ordersHTML = '<div class="orders-list" id="orders-list">';
-    
-    // Sort orders by date (newest first)
-    userOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    userOrders.forEach(order => {
-        const status = order.status || 'pending';
-        const statusClass = `status-${status}`;
-        
-        // For sellers, show only their items
-        const itemsToShow = currentUser.role === 'seller' 
-            ? order.items.filter(item => item.sellerId === currentUser.id)
-            : order.items;
-        
-        const orderTotal = currentUser.role === 'seller'
-            ? itemsToShow.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-            : order.total || itemsToShow.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        
-        ordersHTML += `
-            <div class="order-card" data-status="${status}">
-                <div class="order-header">
-                    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                        <span class="order-id">${order.id}</span>
-                        <span class="order-date">📅 ${order.date}</span>
-                    </div>
-                    <span class="order-status ${statusClass}">${status.toUpperCase()}</span>
+            
+            <div class="stat-cards">
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-label">Total Orders</div>
+                    <div class="stat-value"><?php echo $totalOrders; ?></div>
                 </div>
-                
-                ${currentUser.role === 'seller' ? `
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-label">Total <?php echo $isSeller ? 'Revenue' : 'Spent'; ?></div>
+                    <div class="stat-value"><?php echo number_format($totalSpent); ?> DZD</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-label">Items Purchased</div>
+                    <div class="stat-value"><?php echo $totalItems; ?></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-label">Pending</div>
+                    <div class="stat-value"><?php echo $pendingOrders; ?></div>
+                    <div class="stat-small">awaiting processing</div>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <span class="filter-btn active" onclick="filterOrders('all')">All Orders</span>
+                <span class="filter-btn" onclick="filterOrders('pending')">Pending</span>
+                <span class="filter-btn" onclick="filterOrders('processing')">Processing</span>
+                <span class="filter-btn" onclick="filterOrders('shipped')">Shipped</span>
+                <span class="filter-btn" onclick="filterOrders('delivered')">Delivered</span>
+            </div>
+            
+            <div class="orders-list" id="orders-list">
+                <?php foreach ($orders as $order): 
+                    // Filter items for seller view
+                    $itemsToShow = $order['items'];
+                    if ($isSeller) {
+                        $itemsToShow = array_filter($order['items'], function($item) use ($currentUser) {
+                            return $item['seller_id'] == $currentUser['id'];
+                        });
+                    }
+                    
+                    $orderTotal = 0;
+                    foreach ($itemsToShow as $item) {
+                        $orderTotal += $item['product_price'] * $item['quantity'];
+                    }
+                ?>
+                <div class="order-card" data-status="<?php echo $order['status']; ?>">
+                    <div class="order-header">
+                        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                            <span class="order-id"><?php echo htmlspecialchars($order['order_number']); ?></span>
+                            <span class="order-date">📅 <?php echo date('d M Y H:i', strtotime($order['created_at'])); ?></span>
+                        </div>
+                        <span class="order-status status-<?php echo $order['status']; ?>"><?php echo strtoupper($order['status']); ?></span>
+                    </div>
+                    
+                    <?php if ($isSeller): ?>
                     <div class="customer-info">
                         <div class="customer-info-item">
                             <span class="customer-info-icon">👤</span>
                             <div>
                                 <div class="customer-info-label">Customer</div>
-                                <div class="customer-info-value">${order.customer?.name || 'N/A'}</div>
+                                <div class="customer-info-value"><?php echo htmlspecialchars($order['buyer_name'] ?? 'N/A'); ?></div>
                             </div>
                         </div>
                         <div class="customer-info-item">
                             <span class="customer-info-icon">📞</span>
                             <div>
                                 <div class="customer-info-label">Phone</div>
-                                <div class="customer-info-value">${order.customer?.phone || 'N/A'}</div>
+                                <div class="customer-info-value"><?php echo htmlspecialchars($order['buyer_phone'] ?? 'N/A'); ?></div>
                             </div>
                         </div>
                         <div class="customer-info-item">
                             <span class="customer-info-icon">📍</span>
                             <div>
                                 <div class="customer-info-label">Address</div>
-                                <div class="customer-info-value">${order.customer?.address || 'N/A'}</div>
+                                <div class="customer-info-value"><?php echo htmlspecialchars($order['shipping_address'] ?? 'N/A'); ?></div>
                             </div>
                         </div>
                     </div>
-                ` : ''}
-                
-                <div class="order-items">
-                    <div class="order-items-title">
-                        <span>📋 Items ${currentUser.role === 'seller' ? '(Your Products)' : ''}</span>
-                    </div>
-                    ${itemsToShow.map(item => `
+                    <?php endif; ?>
+                    
+                    <div class="order-items">
+                        <div class="order-items-title">
+                            <span>📋 Items <?php echo $isSeller ? '(Your Products)' : ''; ?></span>
+                        </div>
+                        <?php foreach ($itemsToShow as $item): ?>
                         <div class="order-item">
-                            <img src="${item.image}" class="order-item-image" onerror="this.src='https://via.placeholder.com/70'">
+                            <img src="<?php echo $item['image_url'] ?? 'https://via.placeholder.com/70'; ?>" class="order-item-image" onerror="this.src='https://via.placeholder.com/70'">
                             <div class="order-item-details">
-                                <div class="order-item-name">${item.name}</div>
+                                <div class="order-item-name"><?php echo htmlspecialchars($item['product_name']); ?></div>
                                 <div class="order-item-meta">
-                                    <span>Quantity: ${item.quantity}</span>
-                                    <span>Price: ${item.price.toLocaleString()} DZD</span>
+                                    <span>Quantity: <?php echo $item['quantity']; ?></span>
+                                    <span>Price: <?php echo number_format($item['product_price']); ?> DZD</span>
                                 </div>
                             </div>
-                            <div class="order-item-price">${(item.price * item.quantity).toLocaleString()} DZD</div>
+                            <div class="order-item-price"><?php echo number_format($item['product_price'] * $item['quantity']); ?> DZD</div>
                         </div>
-                    `).join('')}
-                </div>
-                
-                <div class="order-footer">
-                    <div class="order-total">
-                        <span>Total:</span> ${orderTotal.toLocaleString()} DZD
+                        <?php endforeach; ?>
                     </div>
                     
-                    ${currentUser.role === 'seller' ? `
-                        <select class="status-select" onchange="updateOrderStatusDirect('${order.id}', this.value)">
-                            <option value="pending" ${status === 'pending' ? 'selected' : ''}>⏳ Pending</option>
-                            <option value="processing" ${status === 'processing' ? 'selected' : ''}>🔄 Processing</option>
-                            <option value="shipped" ${status === 'shipped' ? 'selected' : ''}>🚚 Shipped</option>
-                            <option value="delivered" ${status === 'delivered' ? 'selected' : ''}>✅ Delivered</option>
-                        </select>
-                    ` : `
-                        <div class="payment-method">
-                            💳 Payment: ${order.paymentMethod || 'CCP'}
+                    <div class="order-footer">
+                        <div class="order-total">
+                            <span>Total:</span> <?php echo number_format($orderTotal); ?> DZD
                         </div>
-                    `}
+                        
+                        <?php if ($isSeller): ?>
+                            <?php if ($order['status'] === 'pending'): ?>
+                            <form method="POST" action="update-order-status.php" style="display: inline;">
+                                <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
+                                <select name="status" class="status-select" onchange="this.form.submit()">
+                                    <option value="pending" selected>⏳ Pending</option>
+                                    <option value="processing">🔄 Processing</option>
+                                    <option value="shipped">🚚 Shipped</option>
+                                    <option value="delivered">✅ Delivered</option>
+                                </select>
+                            </form>
+                            <?php else: ?>
+                            <div class="payment-method">
+                                💳 Status: <?php echo ucfirst($order['status']); ?>
+                            </div>
+                            <?php endif; ?>
+                        <?php else: ?>
+                        <div class="payment-method">
+                            💳 Payment: <?php echo $order['payment_method'] === 'ccp' ? 'CCP Transfer' : 'Cash on Delivery'; ?>
+                        </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
+                <?php endforeach; ?>
             </div>
-        `;
-    });
-    
-    ordersHTML += '</div>';
-    
-    container.innerHTML = `
-        <div class="page-header">
-            <h1>📋 My Orders</h1>
-            <span class="role-indicator ${roleClass}">${roleText}</span>
+            
+            <?php endif; ?>
         </div>
-        ${statsHTML}
-        ${filterHTML}
-        ${ordersHTML}
-    `;
-}
+    </div>
+</main>
 
-// Filter orders by status
-function filterOrdersDirect(status) {
-    // Update active filter button
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-    
-    // Filter orders
-    const orders = document.querySelectorAll('.order-card');
-    orders.forEach(order => {
-        if (status === 'all') {
-            order.style.display = 'block';
-        } else {
-            order.style.display = order.dataset.status === status ? 'block' : 'none';
-        }
-    });
-}
+<footer>
+    <p>© 2026 M7 Marketplace. All rights reserved. | <a href="about.php">About</a> | <a href="contact.php">Contact</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
+</footer>
 
-// Update order status (for sellers)
-function updateOrderStatusDirect(orderId, newStatus) {
-    const allOrders = JSON.parse(localStorage.getItem('orders')) || [];
-    const orderIndex = allOrders.findIndex(o => o.id === orderId);
-    
-    if (orderIndex !== -1) {
-        allOrders[orderIndex].status = newStatus;
-        localStorage.setItem('orders', JSON.stringify(allOrders));
-        
-        // Show success message
-        showNotificationDirect(`✅ Order status updated to ${newStatus}`, 'success');
-        
-        // Update the status badge
-        const orderCard = event.target.closest('.order-card');
-        const statusBadge = orderCard.querySelector('.order-status');
-        statusBadge.className = `order-status status-${newStatus}`;
-        statusBadge.textContent = newStatus.toUpperCase();
-        orderCard.dataset.status = newStatus;
-    }
-}
-
-// Show notification
-function showNotificationDirect(message, type) {
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        padding: 15px 25px;
-        border-radius: 50px;
-        background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#d96565' : '#2196F3'};
-        color: white;
-        font-weight: 600;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        animation: slideIn 0.3s ease;
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
-
-// Add animation styles
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100px); opacity: 0; }
-    }
-`;
-document.head.appendChild(style);
-</script>
-<script src="script.js"></script>
-<!-- Add these at the bottom of each page, just before </body> -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
